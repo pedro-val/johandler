@@ -18,6 +18,7 @@ impl MigrationTrait for Migration {
                     .col(string_null(Payments::PaymentMethod))
                     .col(string_null(Payments::Currency))
                     .col(boolean_null(Payments::PostponedPayment))
+                    .col(boolean(Payments::Open))
                     .to_owned(),
             )
             .await
@@ -41,6 +42,5 @@ enum Payments {
     PaymentMethod,
     Currency,
     PostponedPayment,
-    
+    Open,
 }
-

@@ -41,7 +41,6 @@ enum PostponedPayments {
     Pid,
     PaymentId,
     PostponedDate,
-    
 }
 
 #[derive(DeriveIden)]

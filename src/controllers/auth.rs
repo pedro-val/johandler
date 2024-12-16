@@ -123,7 +123,6 @@ async fn reset(State(ctx): State<AppContext>, Json(params): Json<ResetParams>) -
 #[debug_handler]
 async fn login(State(ctx): State<AppContext>, Json(params): Json<LoginParams>) -> Result<Response> {
     let user = users::Model::find_by_email(&ctx.db, &params.email).await?;
-
     let valid = user.verify_password(&params.password);
 
     if !valid {

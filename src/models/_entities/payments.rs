@@ -18,6 +18,7 @@ pub struct Model {
     pub payment_method: Option<String>,
     pub currency: Option<String>,
     pub postponed_payment: Option<bool>,
+    pub open: bool,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

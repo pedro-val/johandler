@@ -1,6 +1,17 @@
 use super::_entities::processes::{ActiveModel, Entity};
 use sea_orm::entity::prelude::*;
 pub type Processes = Entity;
+use super::_entities::processes;
+use loco_rs::model::ModelError;
+use loco_rs::model::{self, ModelResult};
+use sea_orm::ActiveValue;
+use sea_orm::{IntoActiveModel, TransactionTrait};
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct CreateNewProcess {
+    pub case_type: String,
+}
 
 #[async_trait::async_trait]
 impl ActiveModelBehavior for ActiveModel {
@@ -10,12 +21,110 @@ impl ActiveModelBehavior for ActiveModel {
     where
         C: ConnectionTrait,
     {
+        if insert {
+            let mut this = self;
+            this.pid = ActiveValue::Set(Uuid::new_v4());
+            return Ok(this);
+        }
         if !insert && self.updated_at.is_unchanged() {
             let mut this = self;
             this.updated_at = sea_orm::ActiveValue::Set(chrono::Utc::now().into());
-            Ok(this)
-        } else {
-            Ok(self)
+            return Ok(this);
         }
+        Ok(self)
+    }
+}
+
+impl super::_entities::processes::Model {
+    /// finds a process by the provided pid
+    ///
+    /// # Errors
+    ///
+    /// When could not find process by the given token or DB query error
+    pub async fn find_by_pid(db: &DatabaseConnection, pid: &str) -> ModelResult<Self> {
+        let process = Entity::find()
+            .filter(
+                model::query::condition()
+                    .eq(super::_entities::processes::Column::Pid, pid)
+                    .build(),
+            )
+            .one(db)
+            .await?;
+        process.ok_or_else(|| ModelError::EntityNotFound)
+    }
+
+    /// finds all processes
+    ///
+    /// # Errors
+    ///
+    /// When could not find processes or DB query error
+    pub async fn find_all(db: &DatabaseConnection) -> ModelResult<Vec<Self>> {
+        let processes = Entity::find().all(db).await?;
+        Ok(processes)
+    }
+
+    /// creates a new process
+    ///
+    /// # Errors
+    ///
+    /// When could not create process or DB query error
+    pub async fn create(db: &DatabaseConnection, process: CreateNewProcess) -> ModelResult<Self> {
+        let txn = db.begin().await?;
+        let process = processes::ActiveModel {
+            case_type: ActiveValue::Set(process.case_type),
+            ..Default::default()
+        }
+        .insert(&txn)
+        .await?;
+        txn.commit().await?;
+        Ok(process)
+    }
+
+    /// updates a process
+    ///
+    /// # Errors
+    ///
+    /// When could not update process or DB query error
+    pub async fn update(
+        db: &DatabaseConnection,
+        pid: &str,
+        process: CreateNewProcess,
+    ) -> ModelResult<Self> {
+        let existing_process = Entity::find()
+            .filter(
+                model::query::condition()
+                    .eq(super::_entities::processes::Column::Pid, pid)
+                    .build(),
+            )
+            .one(db)
+            .await?
+            .ok_or_else(|| ModelError::EntityNotFound)?;
+        let mut edited_process = existing_process.into_active_model();
+        edited_process.case_type = ActiveValue::Set(process.case_type);
+        let txn = db.begin().await?;
+        let process = edited_process.update(&txn).await?;
+        txn.commit().await?;
+        Ok(process)
+    }
+
+    /// deletes a process
+    ///
+    /// # Errors
+    ///
+    /// When could not delete process or DB query error
+    pub async fn delete(db: &DatabaseConnection, pid: &str) -> ModelResult<()> {
+        let existing_process = Entity::find()
+            .filter(
+                model::query::condition()
+                    .eq(super::_entities::processes::Column::Pid, pid)
+                    .build(),
+            )
+            .one(db)
+            .await?
+            .ok_or_else(|| ModelError::EntityNotFound)?;
+        let txn = db.begin().await?;
+        existing_process.delete(&txn).await?;
+        txn.commit().await?;
+        Ok(())
     }
 }
