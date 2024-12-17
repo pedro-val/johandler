@@ -59,6 +59,23 @@ impl super::_entities::clients::Model {
         client.ok_or_else(|| ModelError::EntityNotFound)
     }
 
+    /// find by client id
+    ///
+    /// # Errors
+    /// 
+    /// When could not find client by the given id or DB query error
+    pub async fn find_by_id(db: &DatabaseConnection, id: i32) -> ModelResult<Self> {
+        let client = Entity::find()
+            .filter(
+                model::query::condition()
+                    .eq(super::_entities::clients::Column::Id, id)
+                    .build(),
+            )
+            .one(db)
+            .await?;
+        client.ok_or_else(|| ModelError::EntityNotFound)
+    }
+
     /// finds all clients
     ///
     /// # Errors

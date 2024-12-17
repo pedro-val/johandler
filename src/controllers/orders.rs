@@ -43,6 +43,24 @@ async fn create_order(
     format::json(OrdersView::GetOrderReturn::from(order))
 }
 
+#[debug_handler]
+pub async fn get_all(
+    _auth: auth::JWT,
+    State(ctx): State<AppContext>,
+) -> Result<Response> {
+    let orders = orders::Model::find_all(&ctx.db).await;
+
+    let orders = match orders {
+        Ok(orders) => orders,
+        Err(err) => {
+            tracing::info!(message = err.to_string(), "could not find orders",);
+            return format::json(());
+        }
+    };
+
+    format::json::<Vec<OrdersView::GetOrderReturn>>(orders.into_iter().map(OrdersView::GetOrderReturn::from).collect())
+}
+
 pub fn routes() -> Routes {
     Routes::new()
         .prefix("/api/orders")

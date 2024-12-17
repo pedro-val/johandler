@@ -71,9 +71,9 @@ impl super::_entities::postponed_payments::Model {
     pub async fn create(
         db: &DatabaseConnection,
         postponed_payment: CreateNewPostponedPayment,
-    ) -> ModelResult<Self> {
+    ) -> ModelResult<Vec<Self>> {
         let txn = db.begin().await?;
-        let postponed_payment = ActiveModel {
+        let _postponed_payment = ActiveModel {
             payment_id: ActiveValue::Set(postponed_payment.payment_id),
             postponed_date: ActiveValue::Set(postponed_payment.postponed_date),
             ..Default::default()
@@ -81,7 +81,8 @@ impl super::_entities::postponed_payments::Model {
         .insert(&txn)
         .await?;
         txn.commit().await?;
-        Ok(postponed_payment)
+        let response = Self::find_all(db).await?;
+        Ok(response)
     }
 
     /// updates a postponed payment
@@ -93,7 +94,7 @@ impl super::_entities::postponed_payments::Model {
         db: &DatabaseConnection,
         pid: &str,
         postponed_payment: CreateNewPostponedPayment,
-    ) -> ModelResult<Self> {
+    ) -> ModelResult<Vec<Self>> {
         let existing_postponed_payment = Entity::find()
             .filter(
                 model::query::condition()
@@ -108,9 +109,10 @@ impl super::_entities::postponed_payments::Model {
         edited_postponed_payment.postponed_date =
             ActiveValue::Set(postponed_payment.postponed_date);
         let txn = db.begin().await?;
-        let postponed_payment = edited_postponed_payment.update(&txn).await?;
+        let _postponed_payment = edited_postponed_payment.update(&txn).await?;
         txn.commit().await?;
-        Ok(postponed_payment)
+        let response = Self::find_all(db).await?;
+        Ok(response)
     }
 
     /// deletes a postponed payment
@@ -118,7 +120,7 @@ impl super::_entities::postponed_payments::Model {
     /// # Errors
     ///
     /// When could not delete postponed payment or DB query error
-    pub async fn delete(db: &DatabaseConnection, pid: &str) -> ModelResult<()> {
+    pub async fn delete(db: &DatabaseConnection, pid: &str) -> ModelResult<Vec<Self>> {
         let existing_postponed_payment = Entity::find()
             .filter(
                 model::query::condition()
@@ -131,6 +133,7 @@ impl super::_entities::postponed_payments::Model {
         let txn = db.begin().await?;
         existing_postponed_payment.delete(&txn).await?;
         txn.commit().await?;
-        Ok(())
+        let response = Self::find_all(db).await?;
+        Ok(response)
     }
 }

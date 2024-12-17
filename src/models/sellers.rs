@@ -66,16 +66,20 @@ impl super::_entities::sellers::Model {
     /// # Errors
     ///
     /// When could not create seller or DB query error
-    pub async fn create(db: &DatabaseConnection, seller: CreateNewSeller) -> ModelResult<Self> {
+    pub async fn create(
+        db: &DatabaseConnection,
+        seller: CreateNewSeller,
+    ) -> ModelResult<Vec<Self>> {
         let txn = db.begin().await?;
-        let seller = sellers::ActiveModel {
+        let _seller = sellers::ActiveModel {
             name: ActiveValue::Set(seller.name),
             ..Default::default()
         }
         .insert(&txn)
         .await?;
         txn.commit().await?;
-        Ok(seller)
+        let response = Self::find_all(db).await?;
+        Ok(response)
     }
 
     /// updates a seller
@@ -87,7 +91,7 @@ impl super::_entities::sellers::Model {
         db: &DatabaseConnection,
         pid: &str,
         seller: CreateNewSeller,
-    ) -> ModelResult<Self> {
+    ) -> ModelResult<Vec<Self>> {
         let vendor = Entity::find()
             .filter(
                 model::query::condition()
@@ -100,9 +104,10 @@ impl super::_entities::sellers::Model {
         let mut edited_seller = vendor.into_active_model();
         edited_seller.name = ActiveValue::Set(seller.name);
         let txn = db.begin().await?;
-        let seller = edited_seller.update(&txn).await?;
+        let _seller = edited_seller.update(&txn).await?;
         txn.commit().await?;
-        Ok(seller)
+        let response = Self::find_all(db).await?;
+        Ok(response)
     }
 
     /// deletes a seller
@@ -110,7 +115,7 @@ impl super::_entities::sellers::Model {
     /// # Errors
     ///
     /// When could not delete seller or DB query error
-    pub async fn delete(db: &DatabaseConnection, pid: &str) -> ModelResult<()> {
+    pub async fn delete(db: &DatabaseConnection, pid: &str) -> ModelResult<Vec<Self>> {
         let vendor = Entity::find()
             .filter(
                 model::query::condition()
@@ -123,6 +128,7 @@ impl super::_entities::sellers::Model {
         let txn = db.begin().await?;
         vendor.delete(&txn).await?;
         txn.commit().await?;
-        Ok(())
+        let response = Self::find_all(db).await?;
+        Ok(response)
     }
 }

@@ -68,16 +68,17 @@ impl super::_entities::processes::Model {
     /// # Errors
     ///
     /// When could not create process or DB query error
-    pub async fn create(db: &DatabaseConnection, process: CreateNewProcess) -> ModelResult<Self> {
+    pub async fn create(db: &DatabaseConnection, process: CreateNewProcess) -> ModelResult<Vec<Self>> {
         let txn = db.begin().await?;
-        let process = processes::ActiveModel {
+        let _process = processes::ActiveModel {
             case_type: ActiveValue::Set(process.case_type),
             ..Default::default()
         }
         .insert(&txn)
         .await?;
         txn.commit().await?;
-        Ok(process)
+        let response = Entity::find().all(db).await?;
+        Ok(response)
     }
 
     /// updates a process
@@ -89,7 +90,7 @@ impl super::_entities::processes::Model {
         db: &DatabaseConnection,
         pid: &str,
         process: CreateNewProcess,
-    ) -> ModelResult<Self> {
+    ) -> ModelResult<Vec<Self>> {
         let existing_process = Entity::find()
             .filter(
                 model::query::condition()
@@ -102,9 +103,10 @@ impl super::_entities::processes::Model {
         let mut edited_process = existing_process.into_active_model();
         edited_process.case_type = ActiveValue::Set(process.case_type);
         let txn = db.begin().await?;
-        let process = edited_process.update(&txn).await?;
+        let _process = edited_process.update(&txn).await?;
         txn.commit().await?;
-        Ok(process)
+        let response = Entity::find().all(db).await?;
+        Ok(response)
     }
 
     /// deletes a process
@@ -112,7 +114,7 @@ impl super::_entities::processes::Model {
     /// # Errors
     ///
     /// When could not delete process or DB query error
-    pub async fn delete(db: &DatabaseConnection, pid: &str) -> ModelResult<()> {
+    pub async fn delete(db: &DatabaseConnection, pid: &str) -> ModelResult<Vec<Self>> {
         let existing_process = Entity::find()
             .filter(
                 model::query::condition()
@@ -125,6 +127,7 @@ impl super::_entities::processes::Model {
         let txn = db.begin().await?;
         existing_process.delete(&txn).await?;
         txn.commit().await?;
-        Ok(())
+        let response = Entity::find().all(db).await?;
+        Ok(response)
     }
 }

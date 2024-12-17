@@ -1,7 +1,7 @@
 pub mod auth;
-pub mod orders;
 pub mod clients;
-pub mod processes;
+pub mod orders;
 pub mod partners;
 pub mod postponed_payments;
+pub mod processes;
 pub mod sellers;

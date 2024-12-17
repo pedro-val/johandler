@@ -57,6 +57,23 @@ impl super::_entities::partners::Model {
         partner.ok_or_else(|| ModelError::EntityNotFound)
     }
 
+    /// find by partner id
+    /// 
+    /// # Errors
+    /// 
+    /// When could not find partner by the given id or DB query error
+    pub async fn find_by_id(db: &DatabaseConnection, id: i32) -> ModelResult<Self> {
+        let partner = Entity::find()
+            .filter(
+                model::query::condition()
+                    .eq(super::_entities::partners::Column::Id, id)
+                    .build(),
+            )
+            .one(db)
+            .await?;
+        partner.ok_or_else(|| ModelError::EntityNotFound)
+    }
+
     /// finds all partners
     ///
     /// # Errors
@@ -72,9 +89,9 @@ impl super::_entities::partners::Model {
     /// # Errors
     ///
     /// When could not create partner or DB query error
-    pub async fn create(db: &DatabaseConnection, partner: CreateNewPartner) -> ModelResult<Self> {
+    pub async fn create(db: &DatabaseConnection, partner: CreateNewPartner) -> ModelResult<Vec<Self>> {
         let txn = db.begin().await?;
-        let partner = partners::ActiveModel {
+        let _partner = partners::ActiveModel {
             name: ActiveValue::Set(partner.name),
             information: ActiveValue::Set(partner.information),
             phone: ActiveValue::Set(partner.phone),
@@ -84,7 +101,8 @@ impl super::_entities::partners::Model {
         .insert(&txn)
         .await?;
         txn.commit().await?;
-        Ok(partner)
+        let response = Self::find_all(db).await?;
+        Ok(response)
     }
 
     /// updates a partner
@@ -96,7 +114,7 @@ impl super::_entities::partners::Model {
         db: &DatabaseConnection,
         pid: &str,
         partner: CreateNewPartner,
-    ) -> ModelResult<Self> {
+    ) -> ModelResult<Vec<Self>> {
         let existing_partner = Entity::find()
             .filter(
                 model::query::condition()
@@ -112,9 +130,10 @@ impl super::_entities::partners::Model {
         edited_partner.phone = ActiveValue::Set(partner.phone);
         edited_partner.email = ActiveValue::Set(partner.email);
         let txn = db.begin().await?;
-        let partner = edited_partner.update(&txn).await?;
+        let _partner = edited_partner.update(&txn).await?;
         txn.commit().await?;
-        Ok(partner)
+        let response = Self::find_all(db).await?;
+        Ok(response)
     }
 
     /// deletes a partner
@@ -122,7 +141,7 @@ impl super::_entities::partners::Model {
     /// # Errors
     ///
     /// When could not delete partner or DB query error
-    pub async fn delete(db: &DatabaseConnection, pid: &str) -> ModelResult<()> {
+    pub async fn delete(db: &DatabaseConnection, pid: &str) -> ModelResult<Vec<Self>> {
         let existing_partner = Entity::find()
             .filter(
                 model::query::condition()
@@ -135,6 +154,7 @@ impl super::_entities::partners::Model {
         let txn = db.begin().await?;
         existing_partner.delete(&txn).await?;
         txn.commit().await?;
-        Ok(())
+        let response = Self::find_all(db).await?;
+        Ok(response)
     }
 }
