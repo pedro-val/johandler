@@ -9,9 +9,9 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CreateNewPayment {
-    pub value: i32,
-    pub payment_date: Option<chrono::NaiveDate>,
-    pub due_date: Option<chrono::NaiveDate>,
+    pub value: f32,
+    pub payment_date: chrono::NaiveDate,
+    pub due_date: chrono::NaiveDate,
     pub payment_method: Option<String>,
     pub currency: Option<String>,
     pub postponed_payment: Option<bool>,

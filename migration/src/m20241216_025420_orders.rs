@@ -15,8 +15,8 @@ impl MigrationTrait for Migration {
                     .col(integer(Orders::ClientId))
                     .col(integer(Orders::ProcessId))
                     .col(boolean(Orders::Open))
-                    .col(integer(Orders::Fee))
-                    .col(integer_null(Orders::PartnerFee))
+                    .col(float(Orders::Fee))
+                    .col(float_null(Orders::PartnerFee))
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk-orders-client_ids")

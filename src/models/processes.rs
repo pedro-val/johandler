@@ -41,7 +41,7 @@ impl super::_entities::processes::Model {
     /// # Errors
     ///
     /// When could not find process by the given token or DB query error
-    pub async fn find_by_pid(db: &DatabaseConnection, pid: &str) -> ModelResult<Self> {
+    pub async fn find_by_pid(db: &DatabaseConnection, pid: Uuid) -> ModelResult<Self> {
         let process = Entity::find()
             .filter(
                 model::query::condition()

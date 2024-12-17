@@ -1,22 +1,13 @@
-use super::_entities::orders;
 use super::_entities::orders::{ActiveModel, Entity};
+use super::_entities::{orders, payments, postponed_payments};
 use sea_orm::entity::prelude::*;
 use sea_orm::ActiveValue;
 pub type Orders = Entity;
+use crate::views::orders::{CreateNewOrder, GetOrderReturn, OrderPayments};
 use loco_rs::model::ModelError;
 use loco_rs::model::{self, ModelResult};
 use sea_orm::IntoActiveModel;
 use sea_orm::TransactionTrait;
-use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct CreateNewOrder {
-    pub client_id: i32,
-    pub process_id: i32,
-    pub open: bool,
-    pub fee: i32,
-    pub partner_fee: Option<i32>,
-}
 
 #[async_trait::async_trait]
 impl ActiveModelBehavior for ActiveModel {
@@ -46,7 +37,7 @@ impl super::_entities::orders::Model {
     /// # Errors
     ///
     /// When could not find order by the given token or DB query error
-    pub async fn find_by_pid(db: &DatabaseConnection, pid: &str) -> ModelResult<Self> {
+    pub async fn find_by_pid(db: &DatabaseConnection, pid: &str) -> ModelResult<GetOrderReturn> {
         let order = Entity::find()
             .filter(
                 model::query::condition()
@@ -55,7 +46,42 @@ impl super::_entities::orders::Model {
             )
             .one(db)
             .await?;
-        order.ok_or_else(|| ModelError::EntityNotFound)
+        let postponed_payments = postponed_payments::Entity::find().all(db).await?;
+        let order = order.ok_or_else(|| ModelError::EntityNotFound)?;
+        let payments = payments::Entity::find()
+            .filter(
+                model::query::condition()
+                    .eq(super::_entities::payments::Column::OrderId, order.id)
+                    .build(),
+            )
+            .all(db)
+            .await?;
+        Ok(GetOrderReturn {
+            pid: order.pid,
+            client_id: order.client_id,
+            process_id: order.process_id,
+            open: order.open,
+            fee: order.fee,
+            partner_fee: order.partner_fee,
+            payments: payments
+                .into_iter()
+                .map(|payment| OrderPayments {
+                    value: payment.value,
+                    payment_date: payment.payment_date,
+                    due_date: payment.due_date,
+                    payment_method: payment.payment_method,
+                    currency: payment.currency,
+                    postponed_payment: payment.postponed_payment,
+                    open: payment.open,
+                    postponed_dates: postponed_payments
+                        .iter()
+                        .filter(|postponed_payment| postponed_payment.payment_id == payment.id)
+                        .map(|postponed_payment| postponed_payment.postponed_date)
+                        .collect::<Vec<_>>()
+                        .into(),
+                })
+                .collect(),
+        })
     }
 
     /// finds all orders
@@ -63,9 +89,47 @@ impl super::_entities::orders::Model {
     /// # Errors
     ///
     /// When could not find orders or DB query error
-    pub async fn find_all(db: &DatabaseConnection) -> ModelResult<Vec<Self>> {
+    pub async fn find_all(db: &DatabaseConnection) -> ModelResult<Vec<GetOrderReturn>> {
         let orders = Entity::find().all(db).await?;
-        Ok(orders)
+        let postponed_payments = postponed_payments::Entity::find().all(db).await?;
+        let mut orders_return = vec![];
+        for order in orders {
+            let payments = payments::Entity::find()
+                .filter(
+                    model::query::condition()
+                        .eq(super::_entities::payments::Column::OrderId, order.id)
+                        .build(),
+                )
+                .all(db)
+                .await?;
+            orders_return.push(GetOrderReturn {
+                pid: order.pid,
+                client_id: order.client_id,
+                process_id: order.process_id,
+                open: order.open,
+                fee: order.fee,
+                partner_fee: order.partner_fee,
+                payments: payments
+                    .into_iter()
+                    .map(|payment| OrderPayments {
+                        value: payment.value,
+                        payment_date: payment.payment_date,
+                        due_date: payment.due_date,
+                        payment_method: payment.payment_method,
+                        currency: payment.currency,
+                        postponed_payment: payment.postponed_payment,
+                        open: payment.open,
+                        postponed_dates: postponed_payments
+                            .iter()
+                            .filter(|postponed_payment| postponed_payment.payment_id == payment.id)
+                            .map(|postponed_payment| postponed_payment.postponed_date)
+                            .collect::<Vec<_>>()
+                            .into(),
+                    })
+                    .collect(),
+            });
+        }
+        Ok(orders_return)
     }
 
     /// creates a new order
@@ -73,9 +137,12 @@ impl super::_entities::orders::Model {
     /// # Errors
     ///
     /// When could not create order or DB query error
-    pub async fn create(db: &DatabaseConnection, order: CreateNewOrder) -> ModelResult<Self> {
+    pub async fn create(
+        db: &DatabaseConnection,
+        order: &CreateNewOrder,
+    ) -> ModelResult<GetOrderReturn> {
         let txn = db.begin().await?;
-        let order = orders::ActiveModel {
+        let to_create_order = orders::ActiveModel {
             client_id: ActiveValue::Set(order.client_id),
             process_id: ActiveValue::Set(order.process_id),
             open: ActiveValue::Set(order.open),
@@ -86,7 +153,52 @@ impl super::_entities::orders::Model {
         .insert(&txn)
         .await?;
         txn.commit().await?;
-        Ok(order)
+        let created_order = Entity::find()
+            .filter(
+                model::query::condition()
+                    .eq(super::_entities::orders::Column::Pid, to_create_order.pid)
+                    .build(),
+            )
+            .one(db)
+            .await?
+            .ok_or_else(|| ModelError::EntityNotFound)?;
+        let mut order_payments = vec![];
+        for payment in &order.payments {
+            let tnx = db.begin().await?;
+            let to_create_payment = payments::ActiveModel {
+                value: ActiveValue::Set(payment.value),
+                payment_date: ActiveValue::Set(payment.payment_date),
+                due_date: ActiveValue::Set(payment.due_date),
+                payment_method: ActiveValue::Set(payment.payment_method.clone()),
+                currency: ActiveValue::Set(payment.currency.clone()),
+                postponed_payment: ActiveValue::Set(payment.postponed_payment),
+                ..Default::default()
+            }
+            .insert(&tnx)
+            .await?;
+            order_payments.push(to_create_payment);
+        }
+        Ok(GetOrderReturn {
+            pid: created_order.pid,
+            client_id: created_order.client_id,
+            process_id: created_order.process_id,
+            open: created_order.open,
+            fee: created_order.fee,
+            partner_fee: created_order.partner_fee,
+            payments: order_payments
+                .into_iter()
+                .map(|payment| OrderPayments {
+                    value: payment.value,
+                    payment_date: payment.payment_date,
+                    due_date: payment.due_date,
+                    payment_method: payment.payment_method,
+                    currency: payment.currency,
+                    postponed_payment: payment.postponed_payment,
+                    open: payment.open,
+                    postponed_dates: None,
+                })
+                .collect(),
+        })
     }
 
     /// updates an order
@@ -98,7 +210,7 @@ impl super::_entities::orders::Model {
         db: &DatabaseConnection,
         pid: &str,
         order: CreateNewOrder,
-    ) -> ModelResult<Self> {
+    ) -> ModelResult<Vec<GetOrderReturn>> {
         let existing_order = Entity::find()
             .filter(
                 model::query::condition()
@@ -115,9 +227,10 @@ impl super::_entities::orders::Model {
         edited_order.fee = ActiveValue::Set(order.fee);
         edited_order.partner_fee = ActiveValue::Set(order.partner_fee);
         let txn = db.begin().await?;
-        let order = edited_order.update(&txn).await?;
+        edited_order.update(&txn).await?;
         txn.commit().await?;
-        Ok(order)
+        let response = Self::find_all(db).await?;
+        Ok(response)
     }
 
     /// deletes an order
@@ -125,7 +238,7 @@ impl super::_entities::orders::Model {
     /// # Errors
     ///
     /// When could not delete order or DB query error
-    pub async fn delete(db: &DatabaseConnection, pid: &str) -> ModelResult<()> {
+    pub async fn delete(db: &DatabaseConnection, pid: &str) -> ModelResult<Vec<GetOrderReturn>> {
         let existing_order = Entity::find()
             .filter(
                 model::query::condition()
@@ -138,6 +251,7 @@ impl super::_entities::orders::Model {
         let txn = db.begin().await?;
         existing_order.delete(&txn).await?;
         txn.commit().await?;
-        Ok(())
+        let response = Self::find_all(db).await?;
+        Ok(response)
     }
 }

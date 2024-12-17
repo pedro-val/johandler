@@ -9,8 +9,8 @@ mod m20241216_022307_partners;
 mod m20241216_022614_sellers;
 mod m20241216_022844_clients;
 mod m20241216_025420_orders;
-mod m20241216_030042_payments;
-mod m20241216_030204_postponed_payments;
+mod m20241217_010835_payments;
+mod m20241217_011107_postponed_payments;
 pub struct Migrator;
 
 #[async_trait::async_trait]
@@ -23,8 +23,8 @@ impl MigratorTrait for Migrator {
             Box::new(m20241216_022614_sellers::Migration),
             Box::new(m20241216_022844_clients::Migration),
             Box::new(m20241216_025420_orders::Migration),
-            Box::new(m20241216_030042_payments::Migration),
-            Box::new(m20241216_030204_postponed_payments::Migration),
+            Box::new(m20241217_010835_payments::Migration),
+            Box::new(m20241217_011107_postponed_payments::Migration),
             // inject-above (do not remove this comment)
         ]
     }

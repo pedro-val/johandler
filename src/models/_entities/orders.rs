@@ -3,7 +3,7 @@
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, Deserialize)]
 #[sea_orm(table_name = "orders")]
 pub struct Model {
     pub created_at: DateTimeWithTimeZone,
@@ -15,8 +15,8 @@ pub struct Model {
     pub client_id: i32,
     pub process_id: i32,
     pub open: bool,
-    pub fee: i32,
-    pub partner_fee: Option<i32>,
+    pub fee: f32,
+    pub partner_fee: Option<f32>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -29,6 +29,8 @@ pub enum Relation {
         on_delete = "Cascade"
     )]
     Clients,
+    #[sea_orm(has_many = "super::payments::Entity")]
+    Payments,
     #[sea_orm(
         belongs_to = "super::processes::Entity",
         from = "Column::ProcessId",
@@ -42,6 +44,12 @@ pub enum Relation {
 impl Related<super::clients::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Clients.def()
+    }
+}
+
+impl Related<super::payments::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Payments.def()
     }
 }
 
