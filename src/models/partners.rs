@@ -45,7 +45,7 @@ impl super::_entities::partners::Model {
     /// # Errors
     ///
     /// When could not find partner by the given token or DB query error
-    pub async fn find_by_pid(db: &DatabaseConnection, pid: &str) -> ModelResult<Self> {
+    pub async fn find_by_pid(db: &DatabaseConnection, pid: Uuid) -> ModelResult<Self> {
         let partner = Entity::find()
             .filter(
                 model::query::condition()
@@ -58,9 +58,9 @@ impl super::_entities::partners::Model {
     }
 
     /// find by partner id
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// When could not find partner by the given id or DB query error
     pub async fn find_by_id(db: &DatabaseConnection, id: i32) -> ModelResult<Self> {
         let partner = Entity::find()
@@ -89,7 +89,10 @@ impl super::_entities::partners::Model {
     /// # Errors
     ///
     /// When could not create partner or DB query error
-    pub async fn create(db: &DatabaseConnection, partner: CreateNewPartner) -> ModelResult<Vec<Self>> {
+    pub async fn create(
+        db: &DatabaseConnection,
+        partner: CreateNewPartner,
+    ) -> ModelResult<Vec<Self>> {
         let txn = db.begin().await?;
         let _partner = partners::ActiveModel {
             name: ActiveValue::Set(partner.name),

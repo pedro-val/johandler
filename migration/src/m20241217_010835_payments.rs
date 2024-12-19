@@ -13,7 +13,7 @@ impl MigrationTrait for Migration {
                     .col(pk_auto(Payments::Id))
                     .col(uuid_uniq(Payments::Pid))
                     .col(float(Payments::Value))
-                    .col(date(Payments::PaymentDate))
+                    .col(date_null(Payments::PaymentDate))
                     .col(date(Payments::DueDate))
                     .col(string_null(Payments::PaymentMethod))
                     .col(string_null(Payments::Currency))

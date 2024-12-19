@@ -1,11 +1,12 @@
-use crate::models::_entities::{orders, payments, postponed_payments};
+// use crate::models::_entities::{orders, payments, postponed_payments};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct OrderPayments {
+    pub pid: Uuid,
     pub value: f32,
-    pub payment_date: chrono::NaiveDate,
+    pub payment_date: Option<chrono::NaiveDate>,
     pub due_date: chrono::NaiveDate,
     pub payment_method: Option<String>,
     pub currency: Option<String>,

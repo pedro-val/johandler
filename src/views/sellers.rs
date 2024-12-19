@@ -17,6 +17,5 @@ impl SellerView {
             pid: model.pid,
             name: model.name,
         }
-
     }
 }

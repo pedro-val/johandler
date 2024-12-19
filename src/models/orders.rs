@@ -66,6 +66,7 @@ impl super::_entities::orders::Model {
             payments: payments
                 .into_iter()
                 .map(|payment| OrderPayments {
+                    pid: payment.pid,
                     value: payment.value,
                     payment_date: payment.payment_date,
                     due_date: payment.due_date,
@@ -82,6 +83,26 @@ impl super::_entities::orders::Model {
                 })
                 .collect(),
         })
+    }
+
+    /// finds orders by the provided client_id
+    ///
+    /// # Errors
+    ///
+    /// When could not find orders by the given client_id or DB query error
+    pub async fn find_by_client_id(
+        db: &DatabaseConnection,
+        client_id: i32,
+    ) -> ModelResult<Vec<Self>> {
+        let orders = Entity::find()
+            .filter(
+                model::query::condition()
+                    .eq(super::_entities::orders::Column::ClientId, client_id)
+                    .build(),
+            )
+            .all(db)
+            .await?;
+        Ok(orders)
     }
 
     /// finds all orders
@@ -112,6 +133,7 @@ impl super::_entities::orders::Model {
                 payments: payments
                     .into_iter()
                     .map(|payment| OrderPayments {
+                        pid: payment.pid,
                         value: payment.value,
                         payment_date: payment.payment_date,
                         due_date: payment.due_date,
@@ -164,7 +186,7 @@ impl super::_entities::orders::Model {
             .ok_or_else(|| ModelError::EntityNotFound)?;
         let mut order_payments = vec![];
         for payment in &order.payments {
-            let tnx = db.begin().await?;
+            let txn = db.begin().await?;
             let to_create_payment = payments::ActiveModel {
                 value: ActiveValue::Set(payment.value),
                 payment_date: ActiveValue::Set(payment.payment_date),
@@ -172,10 +194,13 @@ impl super::_entities::orders::Model {
                 payment_method: ActiveValue::Set(payment.payment_method.clone()),
                 currency: ActiveValue::Set(payment.currency.clone()),
                 postponed_payment: ActiveValue::Set(payment.postponed_payment),
+                order_id: ActiveValue::Set(created_order.id),
+                open: ActiveValue::Set(payment.open),
                 ..Default::default()
             }
-            .insert(&tnx)
+            .insert(&txn)
             .await?;
+            txn.commit().await?;
             order_payments.push(to_create_payment);
         }
         Ok(GetOrderReturn {
@@ -188,6 +213,7 @@ impl super::_entities::orders::Model {
             payments: order_payments
                 .into_iter()
                 .map(|payment| OrderPayments {
+                    pid: payment.pid,
                     value: payment.value,
                     payment_date: payment.payment_date,
                     due_date: payment.due_date,

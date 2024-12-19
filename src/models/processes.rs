@@ -53,6 +53,16 @@ impl super::_entities::processes::Model {
         process.ok_or_else(|| ModelError::EntityNotFound)
     }
 
+    /// finds a process by the provided id
+    ///
+    /// # Errors
+    ///
+    /// When could not find process by the given id or DB query error
+    pub async fn find_by_id(db: &DatabaseConnection, id: i32) -> ModelResult<Self> {
+        let process = Entity::find_by_id(id).one(db).await?;
+        process.ok_or_else(|| ModelError::EntityNotFound)
+    }
+
     /// finds all processes
     ///
     /// # Errors
@@ -68,7 +78,10 @@ impl super::_entities::processes::Model {
     /// # Errors
     ///
     /// When could not create process or DB query error
-    pub async fn create(db: &DatabaseConnection, process: CreateNewProcess) -> ModelResult<Vec<Self>> {
+    pub async fn create(
+        db: &DatabaseConnection,
+        process: CreateNewProcess,
+    ) -> ModelResult<Vec<Self>> {
         let txn = db.begin().await?;
         let _process = processes::ActiveModel {
             case_type: ActiveValue::Set(process.case_type),

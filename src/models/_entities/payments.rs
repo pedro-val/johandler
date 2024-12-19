@@ -14,7 +14,7 @@ pub struct Model {
     pub pid: Uuid,
     #[sea_orm(column_type = "Float")]
     pub value: f32,
-    pub payment_date: Date,
+    pub payment_date: Option<Date>,
     pub due_date: Date,
     pub payment_method: Option<String>,
     pub currency: Option<String>,

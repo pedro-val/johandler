@@ -77,7 +77,7 @@ impl super::_entities::payments::Model {
         let txn = db.begin().await?;
         let payment = ActiveModel {
             value: ActiveValue::Set(payment.value),
-            payment_date: ActiveValue::Set(payment.payment_date),
+            payment_date: ActiveValue::Set(Some(payment.payment_date)),
             due_date: ActiveValue::Set(payment.due_date),
             payment_method: ActiveValue::Set(payment.payment_method),
             currency: ActiveValue::Set(payment.currency),
@@ -112,7 +112,7 @@ impl super::_entities::payments::Model {
             .ok_or_else(|| ModelError::EntityNotFound)?;
         let mut edited_payment = existing_payment.into_active_model();
         edited_payment.value = ActiveValue::Set(payment.value);
-        edited_payment.payment_date = ActiveValue::Set(payment.payment_date);
+        edited_payment.payment_date = ActiveValue::Set(Some(payment.payment_date));
         edited_payment.due_date = ActiveValue::Set(payment.due_date);
         edited_payment.payment_method = ActiveValue::Set(payment.payment_method);
         edited_payment.currency = ActiveValue::Set(payment.currency);

@@ -1,7 +1,7 @@
 use super::_entities::clients::{ActiveModel, Entity};
 use sea_orm::entity::prelude::*;
 pub type Clients = Entity;
-use crate::models::_entities::clients;
+use crate::models::_entities::{clients, partners, sellers};
 use loco_rs::model::ModelError;
 use loco_rs::model::{self, ModelResult};
 use sea_orm::TransactionTrait;
@@ -15,8 +15,8 @@ pub struct CreateNewClient {
     pub phone: String,
     pub phone2: Option<String>,
     pub email: String,
-    pub seller_id: i32,
-    pub partner_id: Option<i32>,
+    pub seller_pid: Uuid,
+    pub partner_pid: Option<Uuid>,
 }
 
 #[async_trait::async_trait]
@@ -62,7 +62,7 @@ impl super::_entities::clients::Model {
     /// find by client id
     ///
     /// # Errors
-    /// 
+    ///
     /// When could not find client by the given id or DB query error
     pub async fn find_by_id(db: &DatabaseConnection, id: i32) -> ModelResult<Self> {
         let client = Entity::find()
@@ -92,6 +92,11 @@ impl super::_entities::clients::Model {
     ///
     /// When could not create client or DB query error
     pub async fn create(db: &DatabaseConnection, client: CreateNewClient) -> ModelResult<Self> {
+        let seller = sellers::Model::find_by_pid(db, client.seller_pid).await?;
+        let partner = match client.partner_pid {
+            Some(pid) => Some(partners::Model::find_by_pid(db, pid).await?),
+            None => None,
+        };
         let txn = db.begin().await?;
         let client = clients::ActiveModel {
             name: ActiveValue::Set(client.name),
@@ -99,8 +104,8 @@ impl super::_entities::clients::Model {
             phone: ActiveValue::Set(client.phone),
             phone2: ActiveValue::Set(client.phone2),
             email: ActiveValue::Set(client.email),
-            seller_id: ActiveValue::Set(client.seller_id),
-            partner_id: ActiveValue::Set(client.partner_id),
+            seller_id: ActiveValue::Set(seller.id),
+            partner_id: ActiveValue::Set(partner.map(|p| p.id)),
             ..Default::default()
         }
         .insert(&txn)
@@ -129,13 +134,18 @@ impl super::_entities::clients::Model {
             .await?
             .ok_or_else(|| ModelError::EntityNotFound)?;
         let mut edited_client = existing_client.into_active_model();
+        let seller = sellers::Model::find_by_pid(db, client.seller_pid).await?;
+        let partner = match client.partner_pid {
+            Some(pid) => Some(partners::Model::find_by_pid(db, pid).await?),
+            None => None,
+        };
         edited_client.name = ActiveValue::Set(client.name);
         edited_client.contact = ActiveValue::Set(client.contact);
         edited_client.phone = ActiveValue::Set(client.phone);
         edited_client.phone2 = ActiveValue::Set(client.phone2);
         edited_client.email = ActiveValue::Set(client.email);
-        edited_client.seller_id = ActiveValue::Set(client.seller_id);
-        edited_client.partner_id = ActiveValue::Set(client.partner_id);
+        edited_client.seller_id = ActiveValue::Set(seller.id);
+        edited_client.partner_id = ActiveValue::Set(partner.map(|p| p.id));
         let txn = db.begin().await?;
         let client = edited_client.update(&txn).await?;
         txn.commit().await?;

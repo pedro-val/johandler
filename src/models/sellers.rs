@@ -39,7 +39,7 @@ impl super::_entities::sellers::Model {
     /// # Errors
     ///
     /// When could not find seller by the given token or DB query error
-    pub async fn find_by_pid(db: &DatabaseConnection, pid: &str) -> ModelResult<Self> {
+    pub async fn find_by_pid(db: &DatabaseConnection, pid: Uuid) -> ModelResult<Self> {
         let seller = Entity::find()
             .filter(
                 model::query::condition()

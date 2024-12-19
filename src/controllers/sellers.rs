@@ -1,12 +1,11 @@
-use crate::models::_entities::{sellers, users};
+use crate::models::_entities::sellers;
 use crate::models::sellers::CreateNewSeller;
 use crate::views::sellers as SellersView;
 use axum::debug_handler;
 use loco_rs::prelude::*;
-use serde::{Deserialize, Serialize};
 
 #[debug_handler]
-pub async fn create_new_seller(
+pub async fn create_new(
     _auth: auth::JWT,
     State(ctx): State<AppContext>,
     Json(req): Json<CreateNewSeller>,
@@ -28,10 +27,7 @@ pub async fn create_new_seller(
 }
 
 #[debug_handler]
-pub async fn get_all(
-    _auth: auth::JWT,
-    State(ctx): State<AppContext>,
-) -> Result<Response> {
+pub async fn get_all(_auth: auth::JWT, State(ctx): State<AppContext>) -> Result<Response> {
     let sellers = sellers::Model::find_all(&ctx.db).await;
 
     let sellers = match sellers {
@@ -48,6 +44,6 @@ pub async fn get_all(
 pub fn routes() -> Routes {
     Routes::new()
         .prefix("/api/sellers")
-        .add("/create", post(create_new_seller))
+        .add("/create", post(create_new))
         .add("/all", get(get_all))
 }

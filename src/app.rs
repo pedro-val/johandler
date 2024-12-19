@@ -11,7 +11,7 @@ use loco_rs::{
 };
 use migration::Migrator;
 use sea_orm::DatabaseConnection;
-use std::path::Path;
+use std::{path::Path, ptr::addr_of};
 
 use crate::{controllers, models::_entities::users, tasks, workers::downloader::DownloadWorker};
 
@@ -45,6 +45,9 @@ impl Hooks for App {
             .add_route(controllers::auth::routes())
             .add_route(controllers::orders::routes())
             .add_route(controllers::sellers::routes())
+            .add_route(controllers::clients::routes())
+            .add_route(controllers::partners::routes())
+            .add_route(controllers::processes::routes())
     }
     async fn connect_workers(ctx: &AppContext, queue: &Queue) -> Result<()> {
         queue.register(DownloadWorker::build(ctx)).await?;

@@ -15,7 +15,7 @@ pub struct JsonOrderToCreate {
 }
 
 #[debug_handler]
-async fn create_order(
+async fn create_new(
     auth: auth::JWT,
     State(ctx): State<AppContext>,
     Json(params): Json<JsonOrderToCreate>,
@@ -44,10 +44,7 @@ async fn create_order(
 }
 
 #[debug_handler]
-pub async fn get_all(
-    _auth: auth::JWT,
-    State(ctx): State<AppContext>,
-) -> Result<Response> {
+pub async fn get_all(_auth: auth::JWT, State(ctx): State<AppContext>) -> Result<Response> {
     let orders = orders::Model::find_all(&ctx.db).await;
 
     let orders = match orders {
@@ -58,11 +55,17 @@ pub async fn get_all(
         }
     };
 
-    format::json::<Vec<OrdersView::GetOrderReturn>>(orders.into_iter().map(OrdersView::GetOrderReturn::from).collect())
+    format::json::<Vec<OrdersView::GetOrderReturn>>(
+        orders
+            .into_iter()
+            .map(OrdersView::GetOrderReturn::from)
+            .collect(),
+    )
 }
 
 pub fn routes() -> Routes {
     Routes::new()
         .prefix("/api/orders")
-        .add("/create", post(create_order))
+        .add("/create", post(create_new))
+        .add("/all", get(get_all))
 }

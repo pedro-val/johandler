@@ -33,28 +33,57 @@ async fn register(
     State(ctx): State<AppContext>,
     Json(params): Json<RegisterParams>,
 ) -> Result<Response> {
-    let res = users::Model::create_with_password(&ctx.db, &params).await;
+    // Verifica se o usuário já existe
+    let check_user = users::Model::find_by_email(&ctx.db, &params.email).await;
 
-    let user = match res {
-        Ok(user) => user,
-        Err(err) => {
-            tracing::info!(
-                message = err.to_string(),
-                user_email = &params.email,
-                "could not register user",
-            );
-            return format::json(());
+    match check_user {
+        Ok(existing_user) => {
+            let valid = existing_user.verify_password(&params.password);
+
+            if !valid {
+                return unauthorized("unauthorized!");
+            }
+
+            let jwt_secret = ctx.config.get_jwt_config()?;
+
+            let token = existing_user
+                .generate_jwt(&jwt_secret.secret, &jwt_secret.expiration)
+                .or_else(|_| unauthorized("unauthorized!"))?;
+
+            return format::json(LoginResponse::new(&existing_user, &token))
         }
-    };
+        Err(_) => {
+            // Usuário não existe, continue com o registro
+            let res = users::Model::create_with_password(&ctx.db, &params).await;
 
-    let user = user
-        .into_active_model()
-        .set_email_verification_sent(&ctx.db)
-        .await?;
+            let user = match res {
+                Ok(user) => user,
+                Err(err) => {
+                    tracing::info!(
+                        message = err.to_string(),
+                        user_email = &params.email,
+                        "could not register user",
+                    );
+                    return format::json(());
+                }
+            };
+            let jwt_secret = ctx.config.get_jwt_config()?;
 
-    AuthMailer::send_welcome(&ctx, &user).await?;
+            let token = user
+                .generate_jwt(&jwt_secret.secret, &jwt_secret.expiration)
+                .or_else(|_| unauthorized("unauthorized!"))?;
+        
+            // let user = user
+            //     .into_active_model()
+            //     .set_email_verification_sent(&ctx.db)
+            //     .await?;
 
-    format::json(())
+            // AuthMailer::send_welcome(&ctx, &user).await?;
+            format::json(LoginResponse::new(&user, &token))
+
+            // format::json(())
+        }
+    }
 }
 
 /// Verify register user. if the user not verified his email, he can't login to

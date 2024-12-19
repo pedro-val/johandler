@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  database:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: johandler_development
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.app
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@database:5432/johandler_development
+      RUST_LOG: debug
+    ports:
+      - "5150:5150"
+    depends_on:
+      - database
+    volumes:
+      - .:/usr/src/app
+    command: cargo watch -x 'run --bin johandler-cli start'
+
+volumes:
+  postgres_data:
