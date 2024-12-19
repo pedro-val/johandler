@@ -1,9 +1,16 @@
 use super::_entities::orders::{ActiveModel, Entity};
-use super::_entities::{orders, payments, postponed_payments};
+use super::_entities::{
+    clients, orders, partners, payments, postponed_payments, processes, sellers,
+};
 use sea_orm::entity::prelude::*;
 use sea_orm::ActiveValue;
 pub type Orders = Entity;
-use crate::views::orders::{CreateNewOrder, GetOrderReturn, OrderPayments};
+use crate::controllers::orders::JsonOrderToCreate;
+use crate::views::orders::{
+    ClientOrderReturn, ClientProcessReturn, CreateNewOrder, GetOrderReturn, OrderPayments,
+};
+use crate::views::partners::PartnerView;
+use crate::views::sellers::SellerView;
 use loco_rs::model::ModelError;
 use loco_rs::model::{self, ModelResult};
 use sea_orm::IntoActiveModel;
@@ -56,17 +63,41 @@ impl super::_entities::orders::Model {
             )
             .all(db)
             .await?;
+        let client = clients::Model::find_by_id(db, order.client_id).await?;
+        let seller = sellers::Model::find_by_id(db, client.seller_id).await?;
+        let partner = match client.partner_id {
+            Some(id) => {
+                let partner = partners::Model::find_by_id(db, id).await?;
+                Some(PartnerView::from(partner))
+            }
+            None => None,
+        };
+        let process = processes::Model::find_by_id(db, order.process_id).await?;
         Ok(GetOrderReturn {
             pid: order.pid,
-            client_id: order.client_id,
-            process_id: order.process_id,
+            client: ClientOrderReturn {
+                pid: client.pid,
+                name: client.name,
+                contact: client.contact,
+                phone: Some(client.phone),
+                phone2: client.phone2,
+                email: Some(client.email),
+                seller: SellerView::from(seller),
+                partner: partner,
+            },
+            process: {
+                ClientProcessReturn {
+                    pid: process.pid,
+                    case_type: process.case_type,
+                }
+            },
             open: order.open,
             fee: order.fee,
             partner_fee: order.partner_fee,
             payments: payments
                 .into_iter()
                 .map(|payment| OrderPayments {
-                    pid: payment.pid,
+                    pid: Some(payment.pid),
                     value: payment.value,
                     payment_date: payment.payment_date,
                     due_date: payment.due_date,
@@ -123,17 +154,41 @@ impl super::_entities::orders::Model {
                 )
                 .all(db)
                 .await?;
+            let client_to_find = clients::Model::find_by_id(db, order.client_id).await?;
+            let seller = sellers::Model::find_by_id(db, client_to_find.seller_id).await?;
+            let partner = match client_to_find.partner_id {
+                Some(id) => {
+                    let partner = partners::Model::find_by_id(db, id).await?;
+                    Some(PartnerView::from(partner))
+                }
+                None => None,
+            };
+            let process = processes::Model::find_by_id(db, order.process_id).await?;
             orders_return.push(GetOrderReturn {
                 pid: order.pid,
-                client_id: order.client_id,
-                process_id: order.process_id,
+                client: ClientOrderReturn {
+                    pid: client_to_find.pid,
+                    name: client_to_find.name,
+                    contact: client_to_find.contact,
+                    phone: Some(client_to_find.phone),
+                    phone2: client_to_find.phone2,
+                    email: Some(client_to_find.email),
+                    seller: SellerView::from(seller),
+                    partner: partner,
+                },
+                process: {
+                    ClientProcessReturn {
+                        pid: process.pid,
+                        case_type: process.case_type,
+                    }
+                },
                 open: order.open,
                 fee: order.fee,
                 partner_fee: order.partner_fee,
                 payments: payments
                     .into_iter()
                     .map(|payment| OrderPayments {
-                        pid: payment.pid,
+                        pid: Some(payment.pid),
                         value: payment.value,
                         payment_date: payment.payment_date,
                         due_date: payment.due_date,
@@ -161,12 +216,14 @@ impl super::_entities::orders::Model {
     /// When could not create order or DB query error
     pub async fn create(
         db: &DatabaseConnection,
-        order: &CreateNewOrder,
+        order: &JsonOrderToCreate,
     ) -> ModelResult<GetOrderReturn> {
+        let client = clients::Model::find_by_pid(db, order.client_pid).await?;
+        let process = processes::Model::find_by_pid(db, order.process_pid).await?;
         let txn = db.begin().await?;
         let to_create_order = orders::ActiveModel {
-            client_id: ActiveValue::Set(order.client_id),
-            process_id: ActiveValue::Set(order.process_id),
+            client_id: ActiveValue::Set(client.id),
+            process_id: ActiveValue::Set(process.id),
             open: ActiveValue::Set(order.open),
             fee: ActiveValue::Set(order.fee),
             partner_fee: ActiveValue::Set(order.partner_fee),
@@ -201,19 +258,65 @@ impl super::_entities::orders::Model {
             .insert(&txn)
             .await?;
             txn.commit().await?;
+            let mut postponed_payments = vec![];
+            if payment.postponed_dates != None {
+                for date in payment.postponed_dates.as_ref().unwrap() {
+                    let txn = db.begin().await?;
+                    let _to_create_postponed_payment = postponed_payments::ActiveModel {
+                        payment_id: ActiveValue::Set(to_create_payment.id),
+                        postponed_date: ActiveValue::Set(*date),
+                        ..Default::default()
+                    }
+                    .insert(&txn)
+                    .await?;
+                    txn.commit().await?;
+                    payment
+                        .postponed_dates
+                        .as_ref()
+                        .unwrap()
+                        .iter()
+                        .for_each(|date| {
+                            postponed_payments.push(*date);
+                        });
+                }
+            }
             order_payments.push(to_create_payment);
         }
+        let client_to_find = clients::Model::find_by_pid(db, order.client_pid).await?;
+        let seller = sellers::Model::find_by_id(db, client_to_find.seller_id).await?;
+        let partner = match client_to_find.partner_id {
+            Some(id) => {
+                let partner = partners::Model::find_by_id(db, id).await?;
+                Some(PartnerView::from(partner))
+            }
+            None => None,
+        };
+        let process = processes::Model::find_by_pid(db, order.process_pid).await?;
         Ok(GetOrderReturn {
             pid: created_order.pid,
-            client_id: created_order.client_id,
-            process_id: created_order.process_id,
+            client: ClientOrderReturn {
+                pid: client_to_find.pid,
+                name: client_to_find.name,
+                contact: client_to_find.contact,
+                phone: Some(client_to_find.phone),
+                phone2: client_to_find.phone2,
+                email: Some(client_to_find.email),
+                seller: SellerView::from(seller),
+                partner: partner,
+            },
+            process: {
+                ClientProcessReturn {
+                    pid: process.pid,
+                    case_type: process.case_type,
+                }
+            },
             open: created_order.open,
             fee: created_order.fee,
             partner_fee: created_order.partner_fee,
             payments: order_payments
                 .into_iter()
                 .map(|payment| OrderPayments {
-                    pid: payment.pid,
+                    pid: Some(payment.pid),
                     value: payment.value,
                     payment_date: payment.payment_date,
                     due_date: payment.due_date,
@@ -246,15 +349,109 @@ impl super::_entities::orders::Model {
             .one(db)
             .await?
             .ok_or_else(|| ModelError::EntityNotFound)?;
-        let mut edited_order = existing_order.into_active_model();
-        edited_order.client_id = ActiveValue::Set(order.client_id);
-        edited_order.process_id = ActiveValue::Set(order.process_id);
+        let mut edited_order = existing_order.clone().into_active_model();
+        let client = clients::Model::find_by_pid(db, order.client_pid).await?;
+        let process = processes::Model::find_by_pid(db, order.process_pid).await?;
+        edited_order.client_id = ActiveValue::Set(client.id);
+        edited_order.process_id = ActiveValue::Set(process.id);
         edited_order.open = ActiveValue::Set(order.open);
         edited_order.fee = ActiveValue::Set(order.fee);
         edited_order.partner_fee = ActiveValue::Set(order.partner_fee);
         let txn = db.begin().await?;
         edited_order.update(&txn).await?;
         txn.commit().await?;
+
+        let existing_payments = payments::Entity::find()
+            .filter(
+                model::query::condition()
+                    .eq(
+                        super::_entities::payments::Column::OrderId,
+                        existing_order.id,
+                    )
+                    .build(),
+            )
+            .all(db)
+            .await?;
+
+        if existing_payments.len() == order.payments.len() {
+            // Ação quando os comprimentos são iguais
+            for (existing_payment, new_payment) in
+                existing_payments.iter().zip(order.payments.iter())
+            {
+                let payment = payments::Entity::find()
+                    .filter(
+                        model::query::condition()
+                            .eq(
+                                super::_entities::payments::Column::Pid,
+                                existing_payment.pid,
+                            )
+                            .build(),
+                    )
+                    .one(db)
+                    .await?
+                    .ok_or_else(|| ModelError::EntityNotFound)?;
+                if new_payment.postponed_dates != None {
+                    for postponed_date in new_payment.postponed_dates.as_ref().unwrap() {
+                        let txn = db.begin().await?;
+                        let _to_create_postponed_payment = postponed_payments::ActiveModel {
+                            payment_id: ActiveValue::Set(payment.id),
+                            postponed_date: ActiveValue::Set(*postponed_date),
+                            ..Default::default()
+                        }
+                        .insert(&txn)
+                        .await?;
+                        txn.commit().await?;
+                    }
+                }
+                let mut edited_payment = payment.clone().into_active_model();
+                edited_payment.value = ActiveValue::Set(new_payment.value);
+                edited_payment.payment_date = ActiveValue::Set(new_payment.payment_date);
+                edited_payment.due_date = ActiveValue::Set(new_payment.due_date);
+                edited_payment.payment_method =
+                    ActiveValue::Set(new_payment.payment_method.clone());
+                edited_payment.currency = ActiveValue::Set(new_payment.currency.clone());
+                edited_payment.postponed_payment =
+                    ActiveValue::Set(Some(new_payment.postponed_dates.is_some()));
+                edited_payment.open = ActiveValue::Set(new_payment.open);
+                let txn = db.begin().await?;
+                edited_payment.update(&txn).await?;
+                txn.commit().await?;
+            }
+        } else {
+            for new_payment in &order.payments {
+                if new_payment.pid == None {
+                    let txn = db.begin().await?;
+                    let to_create_payment = payments::ActiveModel {
+                        value: ActiveValue::Set(new_payment.value),
+                        payment_date: ActiveValue::Set(new_payment.payment_date),
+                        due_date: ActiveValue::Set(new_payment.due_date),
+                        payment_method: ActiveValue::Set(new_payment.payment_method.clone()),
+                        currency: ActiveValue::Set(new_payment.currency.clone()),
+                        postponed_payment: ActiveValue::Set(new_payment.postponed_payment),
+                        order_id: ActiveValue::Set(existing_order.id),
+                        open: ActiveValue::Set(new_payment.open),
+                        ..Default::default()
+                    }
+                    .insert(&txn)
+                    .await?;
+                    txn.commit().await?;
+                    if new_payment.postponed_dates != None {
+                        for date in new_payment.postponed_dates.as_ref().unwrap() {
+                            let txn = db.begin().await?;
+                            let _to_create_postponed_payment = postponed_payments::ActiveModel {
+                                payment_id: ActiveValue::Set(to_create_payment.id),
+                                postponed_date: ActiveValue::Set(*date),
+                                ..Default::default()
+                            }
+                            .insert(&txn)
+                            .await?;
+                            txn.commit().await?;
+                        }
+                    }
+                }
+            }
+        }
+
         let response = Self::find_all(db).await?;
         Ok(response)
     }

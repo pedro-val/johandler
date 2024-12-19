@@ -1,10 +1,12 @@
-// use crate::models::_entities::{orders, payments, postponed_payments};
+use crate::models::_entities::{clients, partners, processes, sellers};
+use crate::views::partners::PartnerView;
+use crate::views::sellers::SellerView;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct OrderPayments {
-    pub pid: Uuid,
+    pub pid: Option<Uuid>,
     pub value: f32,
     pub payment_date: Option<chrono::NaiveDate>,
     pub due_date: chrono::NaiveDate,
@@ -17,8 +19,8 @@ pub struct OrderPayments {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CreateNewOrder {
-    pub client_id: i32,
-    pub process_id: i32,
+    pub client_pid: Uuid,
+    pub process_pid: Uuid,
     pub open: bool,
     pub fee: f32,
     pub partner_fee: Option<f32>,
@@ -26,13 +28,31 @@ pub struct CreateNewOrder {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
+pub struct ClientOrderReturn {
+    pub pid: Uuid,
+    pub name: String,
+    pub contact: String,
+    pub phone: Option<String>,
+    pub phone2: Option<String>,
+    pub email: Option<String>,
+    pub seller: SellerView,
+    pub partner: Option<PartnerView>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ClientProcessReturn {
+    pub pid: Uuid,
+    pub case_type: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
 pub struct GetOrderReturn {
     pub pid: Uuid,
-    pub client_id: i32,
-    pub process_id: i32,
     pub open: bool,
     pub fee: f32,
     pub partner_fee: Option<f32>,
+    pub client: ClientOrderReturn,
+    pub process: ClientProcessReturn,
     pub payments: Vec<OrderPayments>,
 }
 
@@ -41,13 +61,13 @@ impl GetOrderReturn {
     pub fn from(order: GetOrderReturn) -> Self {
         Self {
             pid: order.pid,
-            client_id: order.client_id,
+            client: order.client,
             payments: order
                 .payments
                 .into_iter()
                 .map(|p| OrderPayments::from(p))
                 .collect(),
-            process_id: order.process_id,
+            process: order.process,
             open: order.open,
             fee: order.fee,
             partner_fee: order.partner_fee,

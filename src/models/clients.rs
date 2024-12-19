@@ -47,7 +47,7 @@ impl super::_entities::clients::Model {
     /// # Errors
     ///
     /// When could not find client by the given token or DB query error
-    pub async fn find_by_pid(db: &DatabaseConnection, pid: &str) -> ModelResult<Self> {
+    pub async fn find_by_pid(db: &DatabaseConnection, pid: Uuid) -> ModelResult<Self> {
         let client = Entity::find()
             .filter(
                 model::query::condition()

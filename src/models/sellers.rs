@@ -51,6 +51,23 @@ impl super::_entities::sellers::Model {
         seller.ok_or_else(|| ModelError::EntityNotFound)
     }
 
+    /// find seller by id
+    ///
+    /// # Errors
+    ///
+    /// When could not find seller by the given id or DB query error
+    pub async fn find_by_id(db: &DatabaseConnection, id: i32) -> ModelResult<Self> {
+        let seller = Entity::find()
+            .filter(
+                model::query::condition()
+                    .eq(super::_entities::sellers::Column::Id, id)
+                    .build(),
+            )
+            .one(db)
+            .await?;
+        seller.ok_or_else(|| ModelError::EntityNotFound)
+    }
+
     /// finds all sellers
     ///
     /// # Errors

@@ -1,4 +1,4 @@
-use crate::models::_entities::{orders, processes, users};
+use crate::models::_entities::{clients, orders, processes};
 use crate::views::orders as OrdersView;
 use crate::views::orders::{CreateNewOrder, OrderPayments};
 use axum::debug_handler;
@@ -6,25 +6,36 @@ use loco_rs::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
+pub struct OrderPaymentsRequest {
+    pub value: f32,
+    pub payment_date: Option<chrono::NaiveDate>,
+    pub due_date: chrono::NaiveDate,
+    pub payment_method: Option<String>,
+    pub currency: Option<String>,
+    pub postponed_payment: Option<bool>,
+    pub open: bool,
+    pub postponed_dates: Option<Vec<chrono::NaiveDate>>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
 pub struct JsonOrderToCreate {
     pub process_pid: Uuid,
+    pub client_pid: Uuid,
     pub open: bool,
     pub fee: f32,
     pub partner_fee: Option<f32>,
-    pub payments: Vec<OrderPayments>,
+    pub payments: Vec<OrderPaymentsRequest>,
 }
 
 #[debug_handler]
 async fn create_new(
-    auth: auth::JWT,
+    _auth: auth::JWT,
     State(ctx): State<AppContext>,
     Json(params): Json<JsonOrderToCreate>,
 ) -> Result<Response> {
-    let user = users::Model::find_by_pid(&ctx.db, &auth.claims.pid).await?;
-    let process = processes::Model::find_by_pid(&ctx.db, params.process_pid).await?;
-    let create_new_order_params = CreateNewOrder {
-        client_id: user.id,
-        process_id: process.id,
+    let create_new_order_params = JsonOrderToCreate {
+        client_pid: params.client_pid,
+        process_pid: params.process_pid,
         open: params.open,
         fee: params.fee,
         partner_fee: params.partner_fee,

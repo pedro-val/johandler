@@ -1,4 +1,6 @@
-use crate::models::_entities::{clients, orders, processes};
+use crate::models::_entities::{clients, orders, partners, processes, sellers};
+use crate::views::partners::PartnerView;
+use crate::views::sellers::SellerView;
 use loco_rs::model::ModelResult;
 use sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
@@ -25,7 +27,10 @@ pub struct ClientViewResponse {
     pub name: String,
     pub contact: String,
     pub phone: Option<String>,
+    pub phone2: Option<String>,
     pub email: Option<String>,
+    pub seller: SellerView,
+    pub partner: Option<PartnerView>,
     pub orders: Vec<ClientOrdersView>,
 }
 
@@ -50,12 +55,25 @@ impl ClientViewResponse {
             });
         }
 
+        let partner = match client.partner_id {
+            Some(id) => {
+                let partner = partners::Model::find_by_id(db, id).await?;
+                Some(PartnerView::from(partner))
+            }
+            None => None,
+        };
+
+        let seller = sellers::Model::find_by_id(db, client.seller_id).await?;
+
         Ok(Self {
             pid: client.pid,
             name: client.name,
             contact: client.contact,
             phone: Some(client.phone),
+            phone2: client.phone2,
             email: Some(client.email),
+            seller: SellerView::from(seller),
+            partner: partner,
             orders: client_orders,
         })
     }

@@ -50,7 +50,7 @@ async fn register(
                 .generate_jwt(&jwt_secret.secret, &jwt_secret.expiration)
                 .or_else(|_| unauthorized("unauthorized!"))?;
 
-            return format::json(LoginResponse::new(&existing_user, &token))
+            return format::json(LoginResponse::new(&existing_user, &token));
         }
         Err(_) => {
             // Usuário não existe, continue com o registro
@@ -72,7 +72,7 @@ async fn register(
             let token = user
                 .generate_jwt(&jwt_secret.secret, &jwt_secret.expiration)
                 .or_else(|_| unauthorized("unauthorized!"))?;
-        
+
             // let user = user
             //     .into_active_model()
             //     .set_email_verification_sent(&ctx.db)
