@@ -17,16 +17,7 @@ impl MigrationTrait for Migration {
                     .col(string(Clients::Phone))
                     .col(string_null(Clients::Phone2))
                     .col(string(Clients::Email))
-                    .col(integer(Clients::SellerId))
                     .col(integer_null(Clients::PartnerId))
-                    .foreign_key(
-                        ForeignKey::create()
-                            .name("fk-clients-seller_ids")
-                            .from(Clients::Table, Clients::SellerId)
-                            .to(Sellers::Table, Sellers::Id)
-                            .on_delete(ForeignKeyAction::Cascade)
-                            .on_update(ForeignKeyAction::Cascade),
-                    )
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk-clients-partner_ids")
@@ -57,14 +48,9 @@ enum Clients {
     Phone,
     Phone2,
     Email,
-    SellerId,
     PartnerId,
 }
-#[derive(DeriveIden)]
-enum Sellers {
-    Table,
-    Id,
-}
+
 #[derive(DeriveIden)]
 enum Partners {
     Table,

@@ -15,8 +15,13 @@ pub struct Model {
     pub client_id: i32,
     pub process_id: i32,
     pub open: bool,
+    #[sea_orm(column_type = "Float")]
     pub fee: f32,
+    #[sea_orm(column_type = "Float")]
+    pub payout: f32,
+    #[sea_orm(column_type = "Float", nullable)]
     pub partner_fee: Option<f32>,
+    pub seller_id: i32,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -29,6 +34,8 @@ pub enum Relation {
         on_delete = "Cascade"
     )]
     Clients,
+    #[sea_orm(has_many = "super::order_fees::Entity")]
+    OrderFees,
     #[sea_orm(has_many = "super::payments::Entity")]
     Payments,
     #[sea_orm(
@@ -39,11 +46,25 @@ pub enum Relation {
         on_delete = "Cascade"
     )]
     Processes,
+    #[sea_orm(
+        belongs_to = "super::sellers::Entity",
+        from = "Column::SellerId",
+        to = "super::sellers::Column::Id",
+        on_update = "Cascade",
+        on_delete = "Cascade"
+    )]
+    Sellers,
 }
 
 impl Related<super::clients::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Clients.def()
+    }
+}
+
+impl Related<super::order_fees::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::OrderFees.def()
     }
 }
 
@@ -56,5 +77,11 @@ impl Related<super::payments::Entity> for Entity {
 impl Related<super::processes::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Processes.def()
+    }
+}
+
+impl Related<super::sellers::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Sellers.def()
     }
 }

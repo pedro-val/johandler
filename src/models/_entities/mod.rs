@@ -3,6 +3,8 @@
 pub mod prelude;
 
 pub mod clients;
+pub mod fees;
+pub mod order_fees;
 pub mod orders;
 pub mod partners;
 pub mod payments;

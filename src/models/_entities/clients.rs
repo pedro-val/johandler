@@ -17,7 +17,6 @@ pub struct Model {
     pub phone: String,
     pub phone2: Option<String>,
     pub email: String,
-    pub seller_id: i32,
     pub partner_id: Option<i32>,
 }
 
@@ -33,14 +32,6 @@ pub enum Relation {
         on_delete = "Cascade"
     )]
     Partners,
-    #[sea_orm(
-        belongs_to = "super::sellers::Entity",
-        from = "Column::SellerId",
-        to = "super::sellers::Column::Id",
-        on_update = "Cascade",
-        on_delete = "Cascade"
-    )]
-    Sellers,
 }
 
 impl Related<super::orders::Entity> for Entity {
@@ -52,11 +43,5 @@ impl Related<super::orders::Entity> for Entity {
 impl Related<super::partners::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Partners.def()
-    }
-}
-
-impl Related<super::sellers::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Sellers.def()
     }
 }

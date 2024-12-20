@@ -4,7 +4,7 @@ use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
-#[sea_orm(table_name = "sellers")]
+#[sea_orm(table_name = "fees")]
 pub struct Model {
     pub created_at: DateTimeWithTimeZone,
     pub updated_at: DateTimeWithTimeZone,
@@ -12,17 +12,18 @@ pub struct Model {
     pub id: i32,
     #[sea_orm(unique)]
     pub pid: Uuid,
-    pub name: String,
+    pub fee: String,
+    pub r#type: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
-    #[sea_orm(has_many = "super::orders::Entity")]
-    Orders,
+    #[sea_orm(has_many = "super::order_fees::Entity")]
+    OrderFees,
 }
 
-impl Related<super::orders::Entity> for Entity {
+impl Related<super::order_fees::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::Orders.def()
+        Relation::OrderFees.def()
     }
 }

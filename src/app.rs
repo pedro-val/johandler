@@ -11,7 +11,7 @@ use loco_rs::{
 };
 use migration::Migrator;
 use sea_orm::DatabaseConnection;
-use std::{path::Path, ptr::addr_of};
+use std::path::Path;
 
 use crate::{controllers, models::_entities::users, tasks, workers::downloader::DownloadWorker};
 

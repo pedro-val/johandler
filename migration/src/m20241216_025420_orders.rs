@@ -15,8 +15,18 @@ impl MigrationTrait for Migration {
                     .col(integer(Orders::ClientId))
                     .col(integer(Orders::ProcessId))
                     .col(boolean(Orders::Open))
+                    .col(float(Orders::Payout))
                     .col(float(Orders::Fee))
                     .col(float_null(Orders::PartnerFee))
+                    .col(integer(Orders::SellerId))
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk-order-seller_ids")
+                            .from(Orders::Table, Orders::SellerId)
+                            .to(Sellers::Table, Sellers::Id)
+                            .on_delete(ForeignKeyAction::Cascade)
+                            .on_update(ForeignKeyAction::Cascade),
+                    )
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk-orders-client_ids")
@@ -54,6 +64,8 @@ enum Orders {
     ProcessId,
     Open,
     Fee,
+    Payout,
+    SellerId,
     PartnerFee,
 }
 
@@ -64,6 +76,12 @@ enum Clients {
 }
 #[derive(DeriveIden)]
 enum Processes {
+    Table,
+    Id,
+}
+
+#[derive(DeriveIden)]
+enum Sellers {
     Table,
     Id,
 }

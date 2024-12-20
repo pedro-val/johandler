@@ -1,7 +1,7 @@
 use super::_entities::clients::{ActiveModel, Entity};
 use sea_orm::entity::prelude::*;
 pub type Clients = Entity;
-use crate::models::_entities::{clients, partners, sellers};
+use crate::models::_entities::{clients, partners};
 use loco_rs::model::ModelError;
 use loco_rs::model::{self, ModelResult};
 use sea_orm::TransactionTrait;
@@ -15,7 +15,6 @@ pub struct CreateNewClient {
     pub phone: String,
     pub phone2: Option<String>,
     pub email: String,
-    pub seller_pid: Uuid,
     pub partner_pid: Option<Uuid>,
 }
 
@@ -92,7 +91,6 @@ impl super::_entities::clients::Model {
     ///
     /// When could not create client or DB query error
     pub async fn create(db: &DatabaseConnection, client: CreateNewClient) -> ModelResult<Self> {
-        let seller = sellers::Model::find_by_pid(db, client.seller_pid).await?;
         let partner = match client.partner_pid {
             Some(pid) => Some(partners::Model::find_by_pid(db, pid).await?),
             None => None,
@@ -104,7 +102,6 @@ impl super::_entities::clients::Model {
             phone: ActiveValue::Set(client.phone),
             phone2: ActiveValue::Set(client.phone2),
             email: ActiveValue::Set(client.email),
-            seller_id: ActiveValue::Set(seller.id),
             partner_id: ActiveValue::Set(partner.map(|p| p.id)),
             ..Default::default()
         }
@@ -134,7 +131,6 @@ impl super::_entities::clients::Model {
             .await?
             .ok_or_else(|| ModelError::EntityNotFound)?;
         let mut edited_client = existing_client.into_active_model();
-        let seller = sellers::Model::find_by_pid(db, client.seller_pid).await?;
         let partner = match client.partner_pid {
             Some(pid) => Some(partners::Model::find_by_pid(db, pid).await?),
             None => None,
@@ -144,7 +140,6 @@ impl super::_entities::clients::Model {
         edited_client.phone = ActiveValue::Set(client.phone);
         edited_client.phone2 = ActiveValue::Set(client.phone2);
         edited_client.email = ActiveValue::Set(client.email);
-        edited_client.seller_id = ActiveValue::Set(seller.id);
         edited_client.partner_id = ActiveValue::Set(partner.map(|p| p.id));
         let txn = db.begin().await?;
         let client = edited_client.update(&txn).await?;

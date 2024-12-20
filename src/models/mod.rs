@@ -7,3 +7,5 @@ pub mod postponed_payments;
 pub mod processes;
 pub mod sellers;
 pub mod users;
+pub mod fees;
+pub mod order_fees;

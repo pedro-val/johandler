@@ -64,7 +64,7 @@ impl super::_entities::orders::Model {
             .all(db)
             .await?;
         let client = clients::Model::find_by_id(db, order.client_id).await?;
-        let seller = sellers::Model::find_by_id(db, client.seller_id).await?;
+        let seller = sellers::Model::find_by_id(db, order.seller_id).await?;
         let partner = match client.partner_id {
             Some(id) => {
                 let partner = partners::Model::find_by_id(db, id).await?;
@@ -82,7 +82,6 @@ impl super::_entities::orders::Model {
                 phone: Some(client.phone),
                 phone2: client.phone2,
                 email: Some(client.email),
-                seller: SellerView::from(seller),
                 partner: partner,
             },
             process: {
@@ -93,6 +92,8 @@ impl super::_entities::orders::Model {
             },
             open: order.open,
             fee: order.fee,
+            payout: Some(order.payout),
+            seller: SellerView::from(seller),
             partner_fee: order.partner_fee,
             payments: payments
                 .into_iter()
@@ -155,7 +156,7 @@ impl super::_entities::orders::Model {
                 .all(db)
                 .await?;
             let client_to_find = clients::Model::find_by_id(db, order.client_id).await?;
-            let seller = sellers::Model::find_by_id(db, client_to_find.seller_id).await?;
+            let seller = sellers::Model::find_by_id(db, order.seller_id).await?;
             let partner = match client_to_find.partner_id {
                 Some(id) => {
                     let partner = partners::Model::find_by_id(db, id).await?;
@@ -173,9 +174,9 @@ impl super::_entities::orders::Model {
                     phone: Some(client_to_find.phone),
                     phone2: client_to_find.phone2,
                     email: Some(client_to_find.email),
-                    seller: SellerView::from(seller),
                     partner: partner,
                 },
+                seller: SellerView::from(seller),
                 process: {
                     ClientProcessReturn {
                         pid: process.pid,
@@ -184,6 +185,7 @@ impl super::_entities::orders::Model {
                 },
                 open: order.open,
                 fee: order.fee,
+                payout: Some(order.payout),
                 partner_fee: order.partner_fee,
                 payments: payments
                     .into_iter()
@@ -226,6 +228,7 @@ impl super::_entities::orders::Model {
             process_id: ActiveValue::Set(process.id),
             open: ActiveValue::Set(order.open),
             fee: ActiveValue::Set(order.fee),
+            payout: ActiveValue::Set(order.payout.unwrap_or_default()),
             partner_fee: ActiveValue::Set(order.partner_fee),
             ..Default::default()
         }
@@ -283,7 +286,7 @@ impl super::_entities::orders::Model {
             order_payments.push(to_create_payment);
         }
         let client_to_find = clients::Model::find_by_pid(db, order.client_pid).await?;
-        let seller = sellers::Model::find_by_id(db, client_to_find.seller_id).await?;
+        let seller = sellers::Model::find_by_pid(db, order.seller_pid).await?;
         let partner = match client_to_find.partner_id {
             Some(id) => {
                 let partner = partners::Model::find_by_id(db, id).await?;
@@ -301,9 +304,9 @@ impl super::_entities::orders::Model {
                 phone: Some(client_to_find.phone),
                 phone2: client_to_find.phone2,
                 email: Some(client_to_find.email),
-                seller: SellerView::from(seller),
                 partner: partner,
             },
+            seller: SellerView::from(seller),
             process: {
                 ClientProcessReturn {
                     pid: process.pid,
@@ -312,6 +315,7 @@ impl super::_entities::orders::Model {
             },
             open: created_order.open,
             fee: created_order.fee,
+            payout: Some(created_order.payout),
             partner_fee: created_order.partner_fee,
             payments: order_payments
                 .into_iter()
@@ -356,6 +360,7 @@ impl super::_entities::orders::Model {
         edited_order.process_id = ActiveValue::Set(process.id);
         edited_order.open = ActiveValue::Set(order.open);
         edited_order.fee = ActiveValue::Set(order.fee);
+        edited_order.payout = ActiveValue::Set(order.payout.unwrap_or_default());
         edited_order.partner_fee = ActiveValue::Set(order.partner_fee);
         let txn = db.begin().await?;
         edited_order.update(&txn).await?;
@@ -461,7 +466,7 @@ impl super::_entities::orders::Model {
     /// # Errors
     ///
     /// When could not delete order or DB query error
-    pub async fn delete(db: &DatabaseConnection, pid: &str) -> ModelResult<Vec<GetOrderReturn>> {
+    pub async fn delete(db: &DatabaseConnection, pid: Uuid) -> ModelResult<Vec<GetOrderReturn>> {
         let existing_order = Entity::find()
             .filter(
                 model::query::condition()

@@ -18,6 +18,7 @@ pub struct ClientOrdersView {
     pub process: OrderProcessView,
     pub open: bool,
     pub fee: f32,
+    pub seller: SellerView,
     pub partner_fee: Option<f32>,
 }
 
@@ -29,7 +30,6 @@ pub struct ClientViewResponse {
     pub phone: Option<String>,
     pub phone2: Option<String>,
     pub email: Option<String>,
-    pub seller: SellerView,
     pub partner: Option<PartnerView>,
     pub orders: Vec<ClientOrdersView>,
 }
@@ -49,6 +49,7 @@ impl ClientViewResponse {
                     pid: process.pid,
                     case_type: process.case_type,
                 },
+                seller: SellerView::from(sellers::Model::find_by_id(db, order.seller_id).await?),
                 open: order.open,
                 fee: order.fee,
                 partner_fee: order.partner_fee,
@@ -63,8 +64,6 @@ impl ClientViewResponse {
             None => None,
         };
 
-        let seller = sellers::Model::find_by_id(db, client.seller_id).await?;
-
         Ok(Self {
             pid: client.pid,
             name: client.name,
@@ -72,7 +71,6 @@ impl ClientViewResponse {
             phone: Some(client.phone),
             phone2: client.phone2,
             email: Some(client.email),
-            seller: SellerView::from(seller),
             partner: partner,
             orders: client_orders,
         })

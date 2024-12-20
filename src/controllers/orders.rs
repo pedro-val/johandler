@@ -1,6 +1,5 @@
-use crate::models::_entities::{clients, orders, processes};
+use crate::models::_entities::orders;
 use crate::views::orders as OrdersView;
-use crate::views::orders::{CreateNewOrder, OrderPayments};
 use axum::debug_handler;
 use loco_rs::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -23,7 +22,9 @@ pub struct JsonOrderToCreate {
     pub client_pid: Uuid,
     pub open: bool,
     pub fee: f32,
+    pub payout: Option<f32>,
     pub partner_fee: Option<f32>,
+    pub seller_pid: Uuid,
     pub payments: Vec<OrderPaymentsRequest>,
 }
 
@@ -35,9 +36,11 @@ async fn create_new(
 ) -> Result<Response> {
     let create_new_order_params = JsonOrderToCreate {
         client_pid: params.client_pid,
+        seller_pid: params.seller_pid,
         process_pid: params.process_pid,
         open: params.open,
         fee: params.fee,
+        payout: params.payout,
         partner_fee: params.partner_fee,
         payments: params.payments,
     };

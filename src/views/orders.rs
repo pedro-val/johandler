@@ -1,4 +1,3 @@
-use crate::models::_entities::{clients, partners, processes, sellers};
 use crate::views::partners::PartnerView;
 use crate::views::sellers::SellerView;
 use serde::{Deserialize, Serialize};
@@ -20,9 +19,11 @@ pub struct OrderPayments {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CreateNewOrder {
     pub client_pid: Uuid,
+    pub seller_pid: Uuid,
     pub process_pid: Uuid,
     pub open: bool,
     pub fee: f32,
+    pub payout: Option<f32>,
     pub partner_fee: Option<f32>,
     pub payments: Vec<OrderPayments>,
 }
@@ -35,7 +36,6 @@ pub struct ClientOrderReturn {
     pub phone: Option<String>,
     pub phone2: Option<String>,
     pub email: Option<String>,
-    pub seller: SellerView,
     pub partner: Option<PartnerView>,
 }
 
@@ -50,7 +50,9 @@ pub struct GetOrderReturn {
     pub pid: Uuid,
     pub open: bool,
     pub fee: f32,
+    pub payout: Option<f32>,
     pub partner_fee: Option<f32>,
+    pub seller: SellerView,
     pub client: ClientOrderReturn,
     pub process: ClientProcessReturn,
     pub payments: Vec<OrderPayments>,
@@ -68,8 +70,10 @@ impl GetOrderReturn {
                 .map(|p| OrderPayments::from(p))
                 .collect(),
             process: order.process,
+            seller: order.seller,
             open: order.open,
             fee: order.fee,
+            payout: order.payout,
             partner_fee: order.partner_fee,
         }
     }
