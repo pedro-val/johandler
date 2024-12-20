@@ -84,10 +84,7 @@ impl super::_entities::fees::Model {
     /// # Errors
     ///
     /// When could not create fee or DB query error
-    pub async fn create(
-        db: &DatabaseConnection,
-        fee: CreateNewFee,
-    ) -> ModelResult<Vec<Self>> {
+    pub async fn create(db: &DatabaseConnection, fee: CreateNewFee) -> ModelResult<Vec<Self>> {
         let txn = db.begin().await?;
         let _fee = fees::ActiveModel {
             fee: ActiveValue::Set(fee.fee),

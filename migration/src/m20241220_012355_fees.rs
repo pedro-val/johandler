@@ -33,6 +33,4 @@ enum Fees {
     Pid,
     Fee,
     Type,
-    
 }
-

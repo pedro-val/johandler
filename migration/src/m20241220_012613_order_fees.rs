@@ -55,7 +55,6 @@ enum OrderFees {
     Open,
     Value,
     Info,
-    
 }
 
 #[derive(DeriveIden)]
