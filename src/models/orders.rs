@@ -1,7 +1,8 @@
 use super::_entities::orders::{ActiveModel, Entity};
 use super::_entities::{
-    clients, orders, partners, payments, postponed_payments, processes, sellers,
+    clients, fees, order_fees, orders, partners, payments, postponed_payments, processes, sellers,
 };
+use crate::views::orders::FeeInOrdersReturn;
 use sea_orm::entity::prelude::*;
 use sea_orm::ActiveValue;
 pub type Orders = Entity;
@@ -73,6 +74,29 @@ impl super::_entities::orders::Model {
             None => None,
         };
         let process = processes::Model::find_by_id(db, order.process_id).await?;
+        let order_fees = order_fees::Entity::find()
+            .filter(
+                model::query::condition()
+                    .eq(super::_entities::order_fees::Column::OrderId, order.id)
+                    .build(),
+            )
+            .all(db)
+            .await?;
+        let mut fees = vec![];
+        for order_fee in order_fees {
+            let fee = fees::Model::find_by_id(db, order_fee.fee_id).await?;
+            fees.push({
+                FeeInOrdersReturn {
+                    fee_pid: fee.pid,
+                    order_fee_pid: Some(order_fee.pid),
+                    fee: fee.fee,
+                    r#type: fee.r#type,
+                    value: order_fee.value,
+                    open: order_fee.open,
+                    info: order_fee.info,
+                }
+            });
+        }
         Ok(GetOrderReturn {
             pid: order.pid,
             client: ClientOrderReturn {
@@ -92,6 +116,7 @@ impl super::_entities::orders::Model {
             },
             open: order.open,
             fee: order.fee,
+            fees: fees,
             payout: Some(order.payout),
             seller: SellerView::from(seller),
             partner_fee: order.partner_fee,
@@ -165,6 +190,29 @@ impl super::_entities::orders::Model {
                 None => None,
             };
             let process = processes::Model::find_by_id(db, order.process_id).await?;
+            let order_fees = order_fees::Entity::find()
+                .filter(
+                    model::query::condition()
+                        .eq(super::_entities::order_fees::Column::OrderId, order.id)
+                        .build(),
+                )
+                .all(db)
+                .await?;
+            let mut fees = vec![];
+            for order_fee in order_fees {
+                let fee = fees::Model::find_by_id(db, order_fee.fee_id).await?;
+                fees.push({
+                    FeeInOrdersReturn {
+                        fee_pid: fee.pid,
+                        order_fee_pid: Some(order_fee.pid),
+                        fee: fee.fee,
+                        r#type: fee.r#type,
+                        value: order_fee.value,
+                        open: order_fee.open,
+                        info: order_fee.info,
+                    }
+                });
+            }
             orders_return.push(GetOrderReturn {
                 pid: order.pid,
                 client: ClientOrderReturn {
@@ -185,6 +233,7 @@ impl super::_entities::orders::Model {
                 },
                 open: order.open,
                 fee: order.fee,
+                fees: fees,
                 payout: Some(order.payout),
                 partner_fee: order.partner_fee,
                 payments: payments
@@ -220,12 +269,29 @@ impl super::_entities::orders::Model {
         db: &DatabaseConnection,
         order: &JsonOrderToCreate,
     ) -> ModelResult<GetOrderReturn> {
+        // Verifique se todas as entidades referenciadas existem
+        println!("Verificando cliente...");
         let client = clients::Model::find_by_pid(db, order.client_pid).await?;
+        println!("Cliente encontrado: {:?}", client);
+
+        println!("Verificando processo...");
         let process = processes::Model::find_by_pid(db, order.process_pid).await?;
+        println!("Processo encontrado: {:?}", process);
+
+        println!("Verificando vendedor...");
+        let seller = sellers::Model::find_by_pid(db, order.seller_pid).await?;
+        println!("Vendedor encontrado: {:?}", seller);
+
+        // Inicie uma transação
+        println!("Iniciando transação...");
         let txn = db.begin().await?;
+
+        // Crie a nova ordem
+        println!("Criando nova ordem...");
         let to_create_order = orders::ActiveModel {
             client_id: ActiveValue::Set(client.id),
             process_id: ActiveValue::Set(process.id),
+            seller_id: ActiveValue::Set(seller.id),
             open: ActiveValue::Set(order.open),
             fee: ActiveValue::Set(order.fee),
             payout: ActiveValue::Set(order.payout.unwrap_or_default()),
@@ -234,7 +300,11 @@ impl super::_entities::orders::Model {
         }
         .insert(&txn)
         .await?;
+        println!("Ordem criada: {:?}", to_create_order);
         txn.commit().await?;
+
+        // Encontre a ordem criada
+        println!("Encontrando a ordem criada...");
         let created_order = Entity::find()
             .filter(
                 model::query::condition()
@@ -244,8 +314,34 @@ impl super::_entities::orders::Model {
             .one(db)
             .await?
             .ok_or_else(|| ModelError::EntityNotFound)?;
+        println!("Ordem encontrada: {:?}", created_order);
+
+        // Crie as taxas associadas à ordem
+        if !order.fees.is_empty() {
+            for order_fee in &order.fees {
+                println!("Verificando taxa: {:?}", order_fee.fee_pid);
+                let fee = fees::Model::find_by_pid(db, order_fee.fee_pid).await?;
+                println!("Taxa encontrada: {:?}", fee);
+                let txn = db.begin().await?;
+                let _to_create_order_fee = order_fees::ActiveModel {
+                    fee_id: ActiveValue::Set(fee.id),
+                    order_id: ActiveValue::Set(created_order.id),
+                    open: ActiveValue::Set(order_fee.open),
+                    value: ActiveValue::Set(order_fee.value),
+                    info: ActiveValue::Set(order_fee.info.clone()),
+                    ..Default::default()
+                }
+                .insert(&txn)
+                .await?;
+                println!("Taxa associada criada: {:?}", _to_create_order_fee);
+                txn.commit().await?;
+            }
+        }
+
+        // Crie os pagamentos associados à ordem
         let mut order_payments = vec![];
         for payment in &order.payments {
+            println!("Criando pagamento: {:?}", payment);
             let txn = db.begin().await?;
             let to_create_payment = payments::ActiveModel {
                 value: ActiveValue::Set(payment.value),
@@ -260,10 +356,12 @@ impl super::_entities::orders::Model {
             }
             .insert(&txn)
             .await?;
+            println!("Pagamento criado: {:?}", to_create_payment);
             txn.commit().await?;
             let mut postponed_payments = vec![];
-            if payment.postponed_dates != None {
-                for date in payment.postponed_dates.as_ref().unwrap() {
+            if let Some(dates) = &payment.postponed_dates {
+                for date in dates {
+                    println!("Criando data adiada: {:?}", date);
                     let txn = db.begin().await?;
                     let _to_create_postponed_payment = postponed_payments::ActiveModel {
                         payment_id: ActiveValue::Set(to_create_payment.id),
@@ -272,29 +370,65 @@ impl super::_entities::orders::Model {
                     }
                     .insert(&txn)
                     .await?;
+                    println!("Data adiada criada: {:?}", _to_create_postponed_payment);
                     txn.commit().await?;
-                    payment
-                        .postponed_dates
-                        .as_ref()
-                        .unwrap()
-                        .iter()
-                        .for_each(|date| {
-                            postponed_payments.push(*date);
-                        });
+                    postponed_payments.push(*date);
                 }
             }
             order_payments.push(to_create_payment);
         }
+
+        // Encontre o cliente, vendedor e parceiro associados à ordem
+        println!("Encontrando cliente associado...");
         let client_to_find = clients::Model::find_by_pid(db, order.client_pid).await?;
+        println!("Cliente associado encontrado: {:?}", client_to_find);
+
+        println!("Encontrando vendedor associado...");
         let seller = sellers::Model::find_by_pid(db, order.seller_pid).await?;
+        println!("Vendedor associado encontrado: {:?}", seller);
+
         let partner = match client_to_find.partner_id {
             Some(id) => {
+                println!("Encontrando parceiro associado...");
                 let partner = partners::Model::find_by_id(db, id).await?;
+                println!("Parceiro associado encontrado: {:?}", partner);
                 Some(PartnerView::from(partner))
             }
             None => None,
         };
+
+        println!("Encontrando processo associado...");
         let process = processes::Model::find_by_pid(db, order.process_pid).await?;
+        println!("Processo associado encontrado: {:?}", process);
+
+        // Encontre as taxas associadas à ordem
+        println!("Encontrando taxas associadas à ordem...");
+        let order_fees = order_fees::Entity::find()
+            .filter(
+                model::query::condition()
+                    .eq(super::_entities::order_fees::Column::OrderId, created_order.id)
+                    .build(),
+            )
+            .all(db)
+            .await?;
+        let mut fees = vec![];
+        for order_fee in order_fees {
+            let fee = fees::Model::find_by_id(db, order_fee.fee_id).await?;
+            fees.push({
+                FeeInOrdersReturn {
+                    fee_pid: fee.pid,
+                    order_fee_pid: Some(order_fee.pid),
+                    fee: fee.fee,
+                    r#type: fee.r#type,
+                    value: order_fee.value,
+                    info: order_fee.info,
+                    open: order_fee.open,
+                }
+            });
+        }
+
+        // Retorne a ordem criada
+        println!("Retornando a ordem criada...");
         Ok(GetOrderReturn {
             pid: created_order.pid,
             client: ClientOrderReturn {
@@ -315,6 +449,7 @@ impl super::_entities::orders::Model {
             },
             open: created_order.open,
             fee: created_order.fee,
+            fees: fees,
             payout: Some(created_order.payout),
             partner_fee: created_order.partner_fee,
             payments: order_payments
@@ -377,6 +512,43 @@ impl super::_entities::orders::Model {
             )
             .all(db)
             .await?;
+        for order_fee in order.fees {
+            if order_fee.order_fee_pid == None {
+                let fee = fees::Model::find_by_pid(db, order_fee.fee_pid).await?;
+                let txn = db.begin().await?;
+                let _to_create_order_fee = order_fees::ActiveModel {
+                    fee_id: ActiveValue::Set(fee.id),
+                    order_id: ActiveValue::Set(existing_order.id),
+                    open: ActiveValue::Set(order_fee.open),
+                    value: ActiveValue::Set(order_fee.value),
+                    info: ActiveValue::Set(order_fee.info.clone()),
+                    ..Default::default()
+                }
+                .insert(&txn)
+                .await?;
+                txn.commit().await?;
+            } else {
+                let order_fee = order_fees::Entity::find()
+                    .filter(
+                        model::query::condition()
+                            .eq(
+                                super::_entities::order_fees::Column::Pid,
+                                order_fee.order_fee_pid,
+                            )
+                            .build(),
+                    )
+                    .one(db)
+                    .await?
+                    .ok_or_else(|| ModelError::EntityNotFound)?;
+                let mut edited_order_fee = order_fee.clone().into_active_model();
+                edited_order_fee.open = ActiveValue::Set(order_fee.open);
+                edited_order_fee.value = ActiveValue::Set(order_fee.value);
+                edited_order_fee.info = ActiveValue::Set(order_fee.info.clone());
+                let txn = db.begin().await?;
+                edited_order_fee.update(&txn).await?;
+                txn.commit().await?;
+            }
+        }
 
         if existing_payments.len() == order.payments.len() {
             // Ação quando os comprimentos são iguais

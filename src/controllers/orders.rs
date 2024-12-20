@@ -17,11 +17,20 @@ pub struct OrderPaymentsRequest {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
+pub struct JsonOrderFeesToCreate {
+    pub fee_pid: Uuid,
+    pub order_fee_pid: Option<Uuid>,
+    pub open: bool,
+    pub value: f32,
+    pub info: Option<String>,
+}
+#[derive(Debug, Deserialize, Serialize)]
 pub struct JsonOrderToCreate {
     pub process_pid: Uuid,
     pub client_pid: Uuid,
     pub open: bool,
     pub fee: f32,
+    pub fees: Vec<JsonOrderFeesToCreate>,
     pub payout: Option<f32>,
     pub partner_fee: Option<f32>,
     pub seller_pid: Uuid,
@@ -40,6 +49,7 @@ async fn create_new(
         process_pid: params.process_pid,
         open: params.open,
         fee: params.fee,
+        fees: params.fees,
         payout: params.payout,
         partner_fee: params.partner_fee,
         payments: params.payments,

@@ -1,7 +1,19 @@
+use crate::controllers::orders::JsonOrderFeesToCreate;
 use crate::views::partners::PartnerView;
 use crate::views::sellers::SellerView;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct FeeInOrdersReturn {
+    pub fee_pid: Uuid,
+    pub order_fee_pid: Option<Uuid>,
+    pub fee: String,
+    pub r#type: Option<String>,
+    pub value: f32,
+    pub info: Option<String>,
+    pub open: bool,
+}
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct OrderPayments {
@@ -23,6 +35,7 @@ pub struct CreateNewOrder {
     pub process_pid: Uuid,
     pub open: bool,
     pub fee: f32,
+    pub fees: Vec<JsonOrderFeesToCreate>,
     pub payout: Option<f32>,
     pub partner_fee: Option<f32>,
     pub payments: Vec<OrderPayments>,
@@ -50,6 +63,7 @@ pub struct GetOrderReturn {
     pub pid: Uuid,
     pub open: bool,
     pub fee: f32,
+    pub fees: Vec<FeeInOrdersReturn>,
     pub payout: Option<f32>,
     pub partner_fee: Option<f32>,
     pub seller: SellerView,
@@ -73,6 +87,11 @@ impl GetOrderReturn {
             seller: order.seller,
             open: order.open,
             fee: order.fee,
+            fees: order
+                .fees
+                .into_iter()
+                .map(|f| FeeInOrdersReturn::from(f))
+                .collect(),
             payout: order.payout,
             partner_fee: order.partner_fee,
         }
