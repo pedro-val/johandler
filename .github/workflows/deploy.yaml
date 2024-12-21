@@ -55,4 +55,5 @@ jobs:
           echo "machine git.heroku.com login $HEROKU_API_KEY password $HEROKU_API_KEY" >> ~/.netrc
           heroku git:remote -a $HEROKU_APP_NAME
           git fetch --unshallow
+          git pull
           git push heroku main --force
