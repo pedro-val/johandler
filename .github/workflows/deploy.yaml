@@ -10,8 +10,8 @@ on:
 env:
   RUST_TOOLCHAIN: stable
   TOOLCHAIN_PROFILE: minimal
-  HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-  HEROKU_APP_NAME: ${{ secrets.HEROKU_APP_NAME }}
+  HEROKU_API_KEY: HRKU-f008c8b2-66d3-43cc-8322-d5a8b6e6150e
+  HEROKU_APP_NAME: johandler-api
 
 jobs:
   rustfmt:
@@ -54,6 +54,6 @@ jobs:
           echo "machine api.heroku.com login $HEROKU_API_KEY password $HEROKU_API_KEY" > ~/.netrc
           echo "machine git.heroku.com login $HEROKU_API_KEY password $HEROKU_API_KEY" >> ~/.netrc
           heroku git:remote -a $HEROKU_APP_NAME
-          git fetch --unshallow
+          git fetch
           git pull
-          git push heroku main --force
+          git push --force heroku main
