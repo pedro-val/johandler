@@ -49,18 +49,19 @@ jobs:
         run: |
           curl https://cli-assets.heroku.com/install.sh | sh
 
-            - name: Verify Heroku CLI Path
-            
       - name: Verify Heroku CLI Path
         run: |
           which heroku
           heroku --version
 
       - name: Deploy to Heroku
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+          HEROKU_APP_NAME: ${{ secrets.HEROKU_APP_NAME }}
         run: |
           echo "machine api.heroku.com login $HEROKU_API_KEY password $HEROKU_API_KEY" > ~/.netrc
           echo "machine git.heroku.com login $HEROKU_API_KEY password $HEROKU_API_KEY" >> ~/.netrc
           heroku git:remote -a $HEROKU_APP_NAME
           git fetch --unshallow
-          git pull
-          git push --force heroku main
+          git pull --rebase=false heroku main
+          git push heroku main --force
