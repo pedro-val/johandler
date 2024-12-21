@@ -1,1 +1,1 @@
-web: cargo run --bin johandler-cli start
+web: cargo loco start
