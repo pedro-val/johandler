@@ -1,1 +1,1 @@
-web: bash -c "source $HOME/.cargo/env && cargo run --release --bin johandler-cli start"
+web: cargo run --release --bin johandler-cli start
