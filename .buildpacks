@@ -1,1 +1,3 @@
 https://github.com/emk/heroku-buildpack-rust.git
+https://buildpack-registry.s3.amazonaws.com/buildpacks/emk/rust.tgz
+https://github.com/heroku/heroku-buildpack-apt
