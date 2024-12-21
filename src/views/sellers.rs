@@ -12,7 +12,7 @@ impl SellerView {
     pub fn from_model(model: Vec<sellers::Model>) -> Vec<Self> {
         model.into_iter().map(Self::from).collect()
     }
-    
+
     #[must_use]
     pub fn from(model: sellers::Model) -> Self {
         Self {

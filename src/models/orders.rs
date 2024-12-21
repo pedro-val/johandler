@@ -379,7 +379,10 @@ impl super::_entities::orders::Model {
         let order_fees = order_fees::Entity::find()
             .filter(
                 model::query::condition()
-                    .eq(super::_entities::order_fees::Column::OrderId, created_order.id)
+                    .eq(
+                        super::_entities::order_fees::Column::OrderId,
+                        created_order.id,
+                    )
                     .build(),
             )
             .all(db)
