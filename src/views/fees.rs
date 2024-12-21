@@ -9,10 +9,12 @@ pub struct FeeView {
 }
 
 impl FeeView {
+    #[must_use]
     pub fn from_model(model: Vec<fees::Model>) -> Vec<Self> {
-        model.into_iter().map(|m| FeeView::from(m)).collect()
+        model.into_iter().map(Self::from).collect()
     }
 
+    #[must_use]
     pub fn from(model: fees::Model) -> Self {
         Self {
             pid: model.pid,

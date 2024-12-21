@@ -8,10 +8,12 @@ pub struct ProcessView {
 }
 
 impl ProcessView {
+    #[must_use]
     pub fn from_model(model: Vec<processes::Model>) -> Vec<Self> {
-        model.into_iter().map(|m| ProcessView::from(m)).collect()
+        model.into_iter().map(Self::from).collect()
     }
 
+    #[must_use]
     pub fn from(model: processes::Model) -> Self {
         Self {
             pid: model.pid,

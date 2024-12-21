@@ -11,10 +11,12 @@ pub struct PartnerView {
 }
 
 impl PartnerView {
+    #[must_use]
     pub fn from_model(model: Vec<partners::Model>) -> Vec<Self> {
-        model.into_iter().map(|m| PartnerView::from(m)).collect()
+        model.into_iter().map(Self::from).collect()
     }
 
+    #[must_use]
     pub fn from(model: partners::Model) -> Self {
         Self {
             pid: model.pid,

@@ -74,24 +74,20 @@ pub struct GetOrderReturn {
 
 impl GetOrderReturn {
     #[must_use]
-    pub fn from(order: GetOrderReturn) -> Self {
+    pub fn from(order: Self) -> Self {
         Self {
             pid: order.pid,
             client: order.client,
             payments: order
                 .payments
                 .into_iter()
-                .map(|p| OrderPayments::from(p))
+                .map(OrderPayments::from)
                 .collect(),
             process: order.process,
             seller: order.seller,
             open: order.open,
             fee: order.fee,
-            fees: order
-                .fees
-                .into_iter()
-                .map(|f| FeeInOrdersReturn::from(f))
-                .collect(),
+            fees: order.fees.into_iter().collect(),
             payout: order.payout,
             partner_fee: order.partner_fee,
         }

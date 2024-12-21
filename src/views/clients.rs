@@ -35,6 +35,11 @@ pub struct ClientViewResponse {
 }
 
 impl ClientViewResponse {
+    /// Creates a `ClientViewResponse` from a `clients::Model`.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if any of the database queries fail.
     pub async fn from_model(db: &DatabaseConnection, client: clients::Model) -> ModelResult<Self> {
         let orders = orders::Model::find_by_client_id(db, client.id).await?;
 
