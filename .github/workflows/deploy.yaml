@@ -49,6 +49,13 @@ jobs:
         run: |
           curl https://cli-assets.heroku.com/install.sh | sh
 
+            - name: Verify Heroku CLI Path
+            
+      - name: Verify Heroku CLI Path
+        run: |
+          which heroku
+          heroku --version
+
       - name: Deploy to Heroku
         run: |
           echo "machine api.heroku.com login $HEROKU_API_KEY password $HEROKU_API_KEY" > ~/.netrc
