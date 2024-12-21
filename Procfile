@@ -1,0 +1,1 @@
+web: cargo run --bin johandler-cli start
