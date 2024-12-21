@@ -1,1 +1,1 @@
-web: bash -c "apt-get update && apt-get install -y gcc && curl https://sh.rustup.rs -sSf | sh -s -- -y && source $HOME/.cargo/env && cargo run --release --bin johandler-cli start"
+web: bash -c "curl https://sh.rustup.rs -sSf | sh -s -- -y && source $HOME/.cargo/env && cargo run --release --bin johandler-cli start"
