@@ -87,7 +87,8 @@ mailer:
 # Database Configuration
 database:
   # Database connection URI
-  uri: {{ get_env(name="DATABASE_URL", default="postgres://postgres:postgres@localhost:5432/johandler_development") }}
+  # uri: {{ get_env(name="DATABASE_URL", default="postgres://postgres:postgres@localhost:5432/johandler_development") }}
+  uri: {{ get_env(name="DATABASE_URL", default="postgresql://postgres:lskA2Aslvbjyr$2sc@db.envebdanxsujiybzlxgw.supabase.co:5432/postgres?sslmode=require") }}
   # When enabled, the sql query will be logged.
   enable_logging: false
   # Set the timeout duration when acquiring a connection.
