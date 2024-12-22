@@ -1,3 +1,6 @@
 build:
   docker:
     web: Dockerfile.app
+
+run:
+  web: cargo run --release --bin johandler-cli start
