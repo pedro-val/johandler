@@ -8,34 +8,12 @@ on:
   pull_request:
 
 env:
-  RUST_TOOLCHAIN: stable
-  TOOLCHAIN_PROFILE: minimal
   HEROKU_API_KEY: HRKU-f008c8b2-66d3-43cc-8322-d5a8b6e6150e
   HEROKU_APP_NAME: johandler-api
 
 jobs:
-  rustfmt:
-    name: Check Style
-    runs-on: ubuntu-latest
-
-    permissions:
-      contents: read
-
-    steps:
-      - name: Checkout the code
-        uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: ${{ env.RUST_TOOLCHAIN }}
-          components: rustfmt
-      - name: Run cargo fmt
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
-
-  deploy:
-    name: Deploy to Heroku
+  build:
+    name: Build and Deploy to Heroku
     runs-on: ubuntu-latest
 
     permissions:
@@ -45,20 +23,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Heroku CLI
+      - name: Log in to Heroku Container Registry
         run: |
-          curl https://cli-assets.heroku.com/install.sh | sh
+          echo $HEROKU_API_KEY | docker login --username=_ --password-stdin registry.heroku.com
 
-      - name: Verify Heroku CLI Path
+      - name: Build Docker image
         run: |
-          which heroku
-          heroku --version
+          docker build -t registry.heroku.com/${{ env.HEROKU_APP_NAME }}/web -f Dockerfile.app .
 
-      - name: Deploy to Heroku
+      - name: Push Docker image to Heroku
         run: |
-          echo "machine api.heroku.com login $HEROKU_API_KEY password $HEROKU_API_KEY" > ~/.netrc
-          echo "machine git.heroku.com login $HEROKU_API_KEY password $HEROKU_API_KEY" >> ~/.netrc
-          heroku git:remote -a $HEROKU_APP_NAME
-          git fetch --unshallow
-          git pull --rebase=false heroku main
-          git push heroku main --force
+          docker push registry.heroku.com/${{ env.HEROKU_APP_NAME }}/web
+
+      - name: Release the application
+        run: |
+          heroku container:release web --app ${{ env.HEROKU_APP_NAME }}
