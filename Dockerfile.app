@@ -10,6 +10,9 @@ COPY . .
 # Defina a variável de ambiente para produção
 ENV RUST_ENV=production
 
+# Copie o certificado SSL para o contêiner
+COPY config/prod-ca-2021.crt /usr/src/app/config/prod-ca-2021.crt
+
 # Compile a aplicação
 RUN cargo build --release
 
