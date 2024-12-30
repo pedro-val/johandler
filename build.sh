@@ -1,15 +1,21 @@
 #!/bin/bash
 
-# Instalar as dependências
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-source $HOME/.cargo/env
+# Definir o diretório HOME explicitamente
+export HOME=/root
 
-# Instalar dependências do projeto
-cargo build --release
+echo "Iniciando o script de build..."
 
-# Mover o binário compilado para o diretório de saída
-mkdir -p public
-cp target/release/johandler-cli public/
+# Instalar o Docker
+echo "Instalando o Docker..."
+curl -fsSL https://get.docker.com -o get-docker.sh
+sh get-docker.sh
 
-# Copiar o certificado SSL para o diretório de saída
-cp config/prod-ca-2021.crt public/
+# Construir a imagem Docker
+echo "Construindo a imagem Docker..."
+docker build -t johandler-app .
+
+# Rodar o container Docker
+echo "Rodando o container Docker..."
+docker run -d -p 8080:8080 johandler-app
+
+echo "Script de build concluído com sucesso."
