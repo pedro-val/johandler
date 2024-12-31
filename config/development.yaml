@@ -50,6 +50,7 @@ server:
       enable: true
       allow_origins:
         - http://localhost:3000
+        - https://johandler-frontend.vercel.app/
 
 # Worker Configuration
 workers:

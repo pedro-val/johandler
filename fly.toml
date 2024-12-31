@@ -17,6 +17,6 @@ primary_region = 'gig'
   processes = ['app']
 
 [[vm]]
-  memory = '1gb'
+  memory = '128gb'
   cpu_kind = 'shared'
-  cpus = 1
+  cpus = 16
