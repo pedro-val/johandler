@@ -49,7 +49,7 @@ server:
     cors:
       enable: true
       allow_origins:
-        - https://johandler-frontend.vercel.app/
+        - https://johandler-frontend.vercel.app
         - http://localhost:3000
 
 # Worker Configuration
