@@ -59,8 +59,6 @@ workers:
   #   - BackgroundAsync - Workers operate asynchronously in the background, processing tasks with async capabilities.
   mode: BackgroundAsync
 
-  
-
 # Mailer Configuration.
 mailer:
   # SMTP mailer configuration.
@@ -87,7 +85,7 @@ mailer:
 # Database Configuration
 database:
   # Database connection URI
-  uri: "postgresql://postgres:1psasdAd234ADg4@db.envebdanxsujiybzlxgw.supabase.co:5432/postgres"
+  uri: "postgresql://postgres:postgres@localhost:5432/johandler_development"
   # When enabled, the sql query will be logged.
   enable_logging: false
   # Set the timeout duration when acquiring a connection.
