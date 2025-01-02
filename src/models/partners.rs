@@ -115,7 +115,7 @@ impl super::_entities::partners::Model {
     /// When could not update partner or DB query error
     pub async fn update(
         db: &DatabaseConnection,
-        pid: &str,
+        pid: Uuid,
         partner: CreateNewPartner,
     ) -> ModelResult<Vec<Self>> {
         let existing_partner = Entity::find()

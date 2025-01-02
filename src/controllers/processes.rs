@@ -5,6 +5,13 @@ use axum::debug_handler;
 use axum::extract::{Json, State};
 use axum::response::Response;
 use loco_rs::prelude::*;
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct UpdateProcess {
+    pub pid: Uuid,
+    pub case_type: String,
+}
 
 #[debug_handler]
 pub async fn create_new(
@@ -43,9 +50,32 @@ pub async fn get_all(_auth: auth::JWT, State(ctx): State<AppContext>) -> Result<
     format::json(ProcessesView::ProcessView::from_model(processes))
 }
 
+#[debug_handler]
+pub async fn update(
+    _auth: auth::JWT,
+    State(ctx): State<AppContext>,
+    Json(req): Json<UpdateProcess>,
+) -> Result<Response> {
+    let update_process_params = CreateNewProcess {
+        case_type: req.case_type.clone(),
+    };
+    let res = processes::Model::update(&ctx.db, req.pid, update_process_params).await;
+
+    let process = match res {
+        Ok(process) => process,
+        Err(err) => {
+            tracing::info!(message = err.to_string(), "could not update process",);
+            return format::json(());
+        }
+    };
+
+    format::json(ProcessesView::ProcessView::from_model(process))
+}
+
 pub fn routes() -> Routes {
     Routes::new()
         .prefix("/api/processes")
         .add("/create", post(create_new))
         .add("/all", get(get_all))
+        .add("/edit", put(update))
 }

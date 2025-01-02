@@ -118,7 +118,7 @@ impl super::_entities::clients::Model {
     /// When could not update client or DB query error
     pub async fn update(
         db: &DatabaseConnection,
-        pid: &str,
+        pid: Uuid,
         client: CreateNewClient,
     ) -> ModelResult<Self> {
         let existing_client = Entity::find()

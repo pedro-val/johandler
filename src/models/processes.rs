@@ -101,7 +101,7 @@ impl super::_entities::processes::Model {
     /// When could not update process or DB query error
     pub async fn update(
         db: &DatabaseConnection,
-        pid: &str,
+        pid: Uuid,
         process: CreateNewProcess,
     ) -> ModelResult<Vec<Self>> {
         let existing_process = Entity::find()

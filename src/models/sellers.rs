@@ -106,7 +106,7 @@ impl super::_entities::sellers::Model {
     /// When could not update seller or DB query error
     pub async fn update(
         db: &DatabaseConnection,
-        pid: &str,
+        pid: Uuid,
         seller: CreateNewSeller,
     ) -> ModelResult<Vec<Self>> {
         let vendor = Entity::find()
