@@ -89,7 +89,7 @@ mailer:
 database:
   # Database connection URI
   # uri: "postgresql://postgres:1psasdAd234ADg4@db.envebdanxsujiybzlxgw.supabase.co:5432/postgres"
-  uri: "${DATABASE_URL}"
+  uri: "postgres://johandler:gpYDmXB0gLsDSZS@johandler-db.flycast:5432/johandler?sslmode=disable"
   # When enabled, the sql query will be logged.
   enable_logging: false
   # Set the timeout duration when acquiring a connection.
