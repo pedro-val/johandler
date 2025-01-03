@@ -1,3 +1,0 @@
--- SQL script to insert data into payments
-INSERT INTO payments (created_at, updated_at, id, pid, value, payment_date, due_date, payment_method, currency, postponed_payment, order_id, open) VALUES ('2025-01-03T14:39:57.983Z', '2025-01-03T14:39:57.983Z', '1', '105da02f-32c0-43e6-be05-686f3e953711', '375', '2024-11-27T03:00:00.000Z', '2024-11-27T03:00:00.000Z', 'pix', 'USD', 'false', '1', 'true');
-INSERT INTO payments (created_at, updated_at, id, pid, value, payment_date, due_date, payment_method, currency, postponed_payment, order_id, open) VALUES ('2025-01-03T14:39:58.697Z', '2025-01-03T14:39:58.697Z', '2', '1c9e81a1-7f71-49bf-a884-86f5c46efd9f', '375', 'null', '2024-12-27T03:00:00.000Z', 'pix', 'USD', 'false', '1', 'true');

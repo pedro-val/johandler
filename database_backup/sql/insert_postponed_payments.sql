@@ -1,1 +1,0 @@
--- SQL script to insert data into postponed_payments

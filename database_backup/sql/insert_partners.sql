@@ -1,4 +1,0 @@
--- SQL script to insert data into partners
-INSERT INTO partners (created_at, updated_at, id, pid, name, information, phone, email) VALUES ('2024-12-31T15:17:20.796Z', '2024-12-31T15:17:20.796Z', '1', 'fe1cc1da-3098-4ec6-bbd9-de0d3b9e04c8', 'Matheus Connection', 'Connection USA ', '17149367257', 'matheus@connectionusa.net');
-INSERT INTO partners (created_at, updated_at, id, pid, name, information, phone, email) VALUES ('2024-12-31T15:19:08.913Z', '2024-12-31T15:19:08.913Z', '2', '97c0abb3-52a5-4f65-94ed-f7f784311942', 'Dra Gi', 'Dra Gi Visto Americano', '556599994708', 'dragi@dragi');
-INSERT INTO partners (created_at, updated_at, id, pid, name, information, phone, email) VALUES ('2024-12-31T15:20:17.778Z', '2025-01-02T22:30:41.949Z', '3', '39dd835d-6d26-4537-843d-9958d6e2fbdc', 'Handley Jardim', 'HJ Consultoria de Migração', '5521997982392', 'consultoria.handleyjardim@gmail.com');
