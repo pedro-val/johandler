@@ -76,7 +76,7 @@ impl ClientViewResponse {
             phone: Some(client.phone),
             phone2: client.phone2,
             email: Some(client.email),
-            partner: partner,
+            partner,
             orders: client_orders,
         })
     }

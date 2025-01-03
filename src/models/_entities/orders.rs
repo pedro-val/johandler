@@ -16,9 +16,9 @@ pub struct Model {
     pub process_id: i32,
     pub open: bool,
     #[sea_orm(column_type = "Float")]
-    pub fee: f32,
-    #[sea_orm(column_type = "Float")]
     pub payout: f32,
+    #[sea_orm(column_type = "Float")]
+    pub fee: f32,
     #[sea_orm(column_type = "Float", nullable)]
     pub partner_fee: Option<f32>,
     pub seller_id: i32,

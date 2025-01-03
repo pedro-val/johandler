@@ -7,5 +7,6 @@ pub mod partners;
 pub mod payments;
 pub mod postponed_payments;
 pub mod processes;
+pub mod processes_fees;
 pub mod sellers;
 pub mod users;

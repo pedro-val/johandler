@@ -106,7 +106,7 @@ impl super::_entities::orders::Model {
                 phone: Some(client.phone),
                 phone2: client.phone2,
                 email: Some(client.email),
-                partner: partner,
+                partner,
             },
             process: {
                 ClientProcessReturn {
@@ -116,7 +116,7 @@ impl super::_entities::orders::Model {
             },
             open: order.open,
             fee: order.fee,
-            fees: fees,
+            fees,
             payout: Some(order.payout),
             seller: SellerView::from(seller),
             partner_fee: order.partner_fee,
@@ -142,11 +142,11 @@ impl super::_entities::orders::Model {
         })
     }
 
-    /// finds orders by the provided client_id
+    /// finds orders by the provided `client_id`
     ///
     /// # Errors
     ///
-    /// When could not find orders by the given client_id or DB query error
+    /// When could not find orders by the given `client_id` or DB query error
     pub async fn find_by_client_id(
         db: &DatabaseConnection,
         client_id: i32,
@@ -222,7 +222,7 @@ impl super::_entities::orders::Model {
                     phone: Some(client_to_find.phone),
                     phone2: client_to_find.phone2,
                     email: Some(client_to_find.email),
-                    partner: partner,
+                    partner,
                 },
                 seller: SellerView::from(seller),
                 process: {
@@ -233,7 +233,7 @@ impl super::_entities::orders::Model {
                 },
                 open: order.open,
                 fee: order.fee,
-                fees: fees,
+                fees,
                 payout: Some(order.payout),
                 partner_fee: order.partner_fee,
                 payments: payments
@@ -413,7 +413,7 @@ impl super::_entities::orders::Model {
                 phone: Some(client_to_find.phone),
                 phone2: client_to_find.phone2,
                 email: Some(client_to_find.email),
-                partner: partner,
+                partner,
             },
             seller: SellerView::from(seller),
             process: {
@@ -424,7 +424,7 @@ impl super::_entities::orders::Model {
             },
             open: created_order.open,
             fee: created_order.fee,
-            fees: fees,
+            fees,
             payout: Some(created_order.payout),
             partner_fee: created_order.partner_fee,
             payments: order_payments

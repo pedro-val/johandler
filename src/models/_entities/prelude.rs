@@ -8,5 +8,6 @@ pub use super::partners::Entity as Partners;
 pub use super::payments::Entity as Payments;
 pub use super::postponed_payments::Entity as PostponedPayments;
 pub use super::processes::Entity as Processes;
+pub use super::processes_fees::Entity as ProcessesFees;
 pub use super::sellers::Entity as Sellers;
 pub use super::users::Entity as Users;

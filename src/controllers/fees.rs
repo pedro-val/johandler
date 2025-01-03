@@ -13,19 +13,20 @@ pub struct UpdateFee {
     pub r#type: Option<String>,
 }
 
+/// Creates a new fee
+///
+/// # Errors
+///
+/// When could not create fee or DB query error
 #[debug_handler]
 pub async fn create_new(
     _auth: auth::JWT,
     State(ctx): State<AppContext>,
-    Json(req): Json<CreateNewFee>,
+    Json(req_body): Json<CreateNewFee>,
 ) -> Result<Response> {
-    let create_new_fee_params = CreateNewFee {
-        fee: req.fee.clone(),
-        r#type: req.r#type.clone(),
-    };
-    let res = fees::Model::create(&ctx.db, create_new_fee_params).await;
+    let response = fees::Model::create(&ctx.db, req_body).await;
 
-    let fee = match res {
+    let fee = match response {
         Ok(fee) => fee,
         Err(err) => {
             tracing::info!(message = err.to_string(), "could not create fee",);
@@ -36,6 +37,11 @@ pub async fn create_new(
     format::json(FeesView::FeeView::from_model(fee))
 }
 
+/// Gets all fees
+///
+/// # Errors
+///
+/// When could not find fees or DB query error
 #[debug_handler]
 pub async fn get_all(_auth: auth::JWT, State(ctx): State<AppContext>) -> Result<Response> {
     let fees = fees::Model::find_all(&ctx.db).await;
@@ -51,19 +57,24 @@ pub async fn get_all(_auth: auth::JWT, State(ctx): State<AppContext>) -> Result<
     format::json(FeesView::FeeView::from_model(fees))
 }
 
+/// Updates a fee
+///
+/// # Errors
+///
+/// When could not update fee or DB query error
 #[debug_handler]
 pub async fn edit(
     _auth: auth::JWT,
     State(ctx): State<AppContext>,
-    Json(req): Json<UpdateFee>,
+    Json(req_body): Json<UpdateFee>,
 ) -> Result<Response> {
     let update_fee_params = CreateNewFee {
-        fee: req.fee.clone(),
-        r#type: req.r#type.clone(),
+        fee: req_body.fee.clone(),
+        r#type: req_body.r#type.clone(),
     };
-    let res = fees::Model::update(&ctx.db, req.pid, update_fee_params).await;
+    let response = fees::Model::update(&ctx.db, req_body.pid, update_fee_params).await;
 
-    let fee = match res {
+    let fee = match response {
         Ok(fee) => fee,
         Err(err) => {
             tracing::info!(message = err.to_string(), "could not update fee",);
@@ -73,7 +84,6 @@ pub async fn edit(
 
     format::json(FeesView::FeeView::from_model(fee))
 }
-
 
 pub fn routes() -> Routes {
     Routes::new()

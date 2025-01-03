@@ -34,56 +34,50 @@ async fn register(
     Json(params): Json<RegisterParams>,
 ) -> Result<Response> {
     // Verifica se o usuário já existe
-    let check_user = users::Model::find_by_email(&ctx.db, &params.email).await;
+    if let Ok(existing_user) = users::Model::find_by_email(&ctx.db, &params.email).await {
+        let valid = existing_user.verify_password(&params.password);
 
-    match check_user {
-        Ok(existing_user) => {
-            let valid = existing_user.verify_password(&params.password);
-
-            if !valid {
-                return unauthorized("unauthorized!");
-            }
-
-            let jwt_secret = ctx.config.get_jwt_config()?;
-
-            let token = existing_user
-                .generate_jwt(&jwt_secret.secret, &jwt_secret.expiration)
-                .or_else(|_| unauthorized("unauthorized!"))?;
-
-            return format::json(LoginResponse::new(&existing_user, &token));
+        if !valid {
+            return unauthorized("unauthorized!");
         }
-        Err(_) => {
-            // Usuário não existe, continue com o registro
-            let res = users::Model::create_with_password(&ctx.db, &params).await;
 
-            let user = match res {
-                Ok(user) => user,
-                Err(err) => {
-                    tracing::info!(
-                        message = err.to_string(),
-                        user_email = &params.email,
-                        "could not register user",
-                    );
-                    return format::json(());
-                }
-            };
-            let jwt_secret = ctx.config.get_jwt_config()?;
+        let jwt_secret = ctx.config.get_jwt_config()?;
 
-            let token = user
-                .generate_jwt(&jwt_secret.secret, &jwt_secret.expiration)
-                .or_else(|_| unauthorized("unauthorized!"))?;
+        let token = existing_user
+            .generate_jwt(&jwt_secret.secret, &jwt_secret.expiration)
+            .or_else(|_| unauthorized("unauthorized!"))?;
 
-            // let user = user
-            //     .into_active_model()
-            //     .set_email_verification_sent(&ctx.db)
-            //     .await?;
-
-            // AuthMailer::send_welcome(&ctx, &user).await?;
-            format::json(LoginResponse::new(&user, &token))
-
-            // format::json(())
-        }
+        return format::json(LoginResponse::new(&existing_user, &token));
     }
+    // Usuário não existe, continue com o registro
+    let res = users::Model::create_with_password(&ctx.db, &params).await;
+
+    let user = match res {
+        Ok(user) => user,
+        Err(err) => {
+            tracing::info!(
+                message = err.to_string(),
+                user_email = &params.email,
+                "could not register user",
+            );
+            return format::json(());
+        }
+    };
+    let jwt_secret = ctx.config.get_jwt_config()?;
+
+    let token = user
+        .generate_jwt(&jwt_secret.secret, &jwt_secret.expiration)
+        .or_else(|_| unauthorized("unauthorized!"))?;
+
+    // let user = user
+    //     .into_active_model()
+    //     .set_email_verification_sent(&ctx.db)
+    //     .await?;
+
+    // AuthMailer::send_welcome(&ctx, &user).await?;
+    format::json(LoginResponse::new(&user, &token))
+
+    // format::json(())
 }
 
 /// Verify register user. if the user not verified his email, he can't login to

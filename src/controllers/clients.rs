@@ -18,6 +18,11 @@ pub struct UpdateClient {
     pub partner_pid: Option<Uuid>,
 }
 
+/// Gets all clients
+///
+/// # Errors
+///
+/// When could not find clients or DB query error
 #[debug_handler]
 pub async fn get_all(
     _auth: auth::JWT,
@@ -34,6 +39,11 @@ pub async fn get_all(
     Ok(Json(client_views))
 }
 
+/// Creates a new client
+///
+/// # Errors
+///
+/// When could not create client or DB query error
 #[debug_handler]
 pub async fn create_new(
     _auth: auth::JWT,
@@ -45,6 +55,11 @@ pub async fn create_new(
     Ok(Json(client_view))
 }
 
+/// Updates a client
+///
+/// # Errors
+///
+/// When could not update client or DB query error
 #[debug_handler]
 pub async fn update(
     _auth: auth::JWT,
@@ -57,7 +72,7 @@ pub async fn update(
         phone: params.phone.clone(),
         phone2: params.phone2.clone(),
         email: params.email.clone(),
-        partner_pid: params.partner_pid.clone(),
+        partner_pid: params.partner_pid,
     };
     let client_updated = clients::Model::update(&ctx.db, params.pid, to_update_client).await?;
     let client_view = ClientViewResponse::from_model(&ctx.db, client_updated).await?;

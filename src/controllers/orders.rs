@@ -37,24 +37,18 @@ pub struct JsonOrderToCreate {
     pub payments: Vec<OrderPaymentsRequest>,
 }
 
+/// Creates a new order
+///
+/// # Errors
+///
+/// When could not create order or DB query error
 #[debug_handler]
 async fn create_new(
     _auth: auth::JWT,
     State(ctx): State<AppContext>,
     Json(params): Json<JsonOrderToCreate>,
 ) -> Result<Response> {
-    let create_new_order_params = JsonOrderToCreate {
-        client_pid: params.client_pid,
-        seller_pid: params.seller_pid,
-        process_pid: params.process_pid,
-        open: params.open,
-        fee: params.fee,
-        fees: params.fees,
-        payout: params.payout,
-        partner_fee: params.partner_fee,
-        payments: params.payments,
-    };
-    let res = orders::Model::create(&ctx.db, &create_new_order_params).await;
+    let res = orders::Model::create(&ctx.db, &params).await;
 
     let order = match res {
         Ok(order) => order,
@@ -67,6 +61,11 @@ async fn create_new(
     format::json(OrdersView::GetOrderReturn::from(order))
 }
 
+/// Gets all orders
+///
+/// # Errors
+///
+/// When could not find orders or DB query error
 #[debug_handler]
 pub async fn get_all(_auth: auth::JWT, State(ctx): State<AppContext>) -> Result<Response> {
     let orders = orders::Model::find_all(&ctx.db).await;

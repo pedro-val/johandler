@@ -16,21 +16,20 @@ pub struct EditPartner {
     pub email: Option<String>,
 }
 
+/// Creates a new partner
+///
+/// # Errors
+///
+/// When could not create partner or DB query error
 #[debug_handler]
 pub async fn create_new(
     _auth: auth::JWT,
     State(ctx): State<AppContext>,
-    Json(req): Json<CreateNewPartner>,
+    Json(req_body): Json<CreateNewPartner>,
 ) -> Result<Response> {
-    let create_new_partner_params = CreateNewPartner {
-        name: req.name.clone(),
-        information: req.information.clone(),
-        phone: req.phone.clone(),
-        email: req.email.clone(),
-    };
-    let res = partners::Model::create(&ctx.db, create_new_partner_params).await;
+    let response = partners::Model::create(&ctx.db, req_body).await;
 
-    let partner = match res {
+    let partner = match response {
         Ok(partner) => partner,
         Err(err) => {
             tracing::info!(message = err.to_string(), "could not create partner",);
@@ -41,6 +40,11 @@ pub async fn create_new(
     format::json(PartnersView::PartnerView::from_model(partner))
 }
 
+/// Gets all partners
+///
+/// # Errors
+///
+/// When could not find partners or DB query error
 #[debug_handler]
 pub async fn get_all(_auth: auth::JWT, State(ctx): State<AppContext>) -> Result<Response> {
     let partners = partners::Model::find_all(&ctx.db).await;
@@ -56,21 +60,26 @@ pub async fn get_all(_auth: auth::JWT, State(ctx): State<AppContext>) -> Result<
     format::json(PartnersView::PartnerView::from_model(partners))
 }
 
+/// Updates a partner
+///
+/// # Errors
+///
+/// When could not find partner by the given pid or DB query error
 #[debug_handler]
 pub async fn edit(
     _auth: auth::JWT,
     State(ctx): State<AppContext>,
-    Json(req): Json<EditPartner>,
+    Json(req_body): Json<EditPartner>,
 ) -> Result<Response> {
     let create_new_partner_params = CreateNewPartner {
-        name: req.name.clone(),
-        information: req.information.clone(),
-        phone: req.phone.clone(),
-        email: req.email.clone(),
+        name: req_body.name.clone(),
+        information: req_body.information.clone(),
+        phone: req_body.phone.clone(),
+        email: req_body.email.clone(),
     };
-    let res = partners::Model::update(&ctx.db, req.pid, create_new_partner_params).await;
+    let response = partners::Model::update(&ctx.db, req_body.pid, create_new_partner_params).await;
 
-    let partner = match res {
+    let partner = match response {
         Ok(partner) => partner,
         Err(err) => {
             tracing::info!(message = err.to_string(), "could not update partner",);
