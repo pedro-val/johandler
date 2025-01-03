@@ -1,0 +1,1 @@
+-- SQL script to insert data into processes_fees
