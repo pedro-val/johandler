@@ -1,0 +1,13 @@
+[
+  {
+    "created_at": "2025-01-03T14:39:57.267Z",
+    "updated_at": "2025-01-03T14:39:57.267Z",
+    "id": 1,
+    "pid": "d05f3ba5-00fd-4921-bbb9-52d9120ded2a",
+    "fee_id": 5,
+    "order_id": 1,
+    "open": true,
+    "value": 1335,
+    "info": "n-600 do filho "
+  }
+]

@@ -16,3 +16,7 @@ jobs:
       - run: flyctl deploy --remote-only
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      - name: Import database data
+        run: ./import_data.sh
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}

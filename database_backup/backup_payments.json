@@ -1,0 +1,30 @@
+[
+  {
+    "created_at": "2025-01-03T14:39:57.983Z",
+    "updated_at": "2025-01-03T14:39:57.983Z",
+    "id": 1,
+    "pid": "105da02f-32c0-43e6-be05-686f3e953711",
+    "value": 375,
+    "payment_date": "2024-11-27T03:00:00.000Z",
+    "due_date": "2024-11-27T03:00:00.000Z",
+    "payment_method": "pix",
+    "currency": "USD",
+    "postponed_payment": false,
+    "order_id": 1,
+    "open": true
+  },
+  {
+    "created_at": "2025-01-03T14:39:58.697Z",
+    "updated_at": "2025-01-03T14:39:58.697Z",
+    "id": 2,
+    "pid": "1c9e81a1-7f71-49bf-a884-86f5c46efd9f",
+    "value": 375,
+    "payment_date": null,
+    "due_date": "2024-12-27T03:00:00.000Z",
+    "payment_method": "pix",
+    "currency": "USD",
+    "postponed_payment": false,
+    "order_id": 1,
+    "open": true
+  }
+]
