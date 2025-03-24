@@ -10,3 +10,4 @@ pub mod processes;
 pub mod processes_fees;
 pub mod sellers;
 pub mod users;
+pub mod parties;
