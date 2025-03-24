@@ -229,7 +229,7 @@ impl super::_entities::users::Model {
             expiration,
             self.pid.to_string(),
             user_name,
-            None, // Claims adicionais (opcional)
+            None,
         )?)
     }
 }

@@ -43,7 +43,6 @@ enum Parties {
     Name,
     UserId,
     Active,
-    
 }
 
 #[derive(DeriveIden)]

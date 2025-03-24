@@ -13,6 +13,10 @@ source $HOME/.cargo/env
 # Imprimir a URI de conexão do banco de dados
 echo "URI de conexão do banco de dados: $DATABASE_URL"
 
+# Limpar o cache de compilação do Cargo
+echo "Limpando o cache de compilação do Cargo..."
+cargo clean
+
 # Instalar dependências do projeto e compilar
 echo "Instalando dependências do projeto e compilando..."
 cargo build --release

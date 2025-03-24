@@ -4,6 +4,13 @@ WORKDIR /usr/src/
 
 COPY . .
 
+# Limpar o cache de compilação do Cargo
+RUN cargo clean
+
+# Atualizar as dependências do Cargo
+RUN cargo update
+
+# Compilar o projeto em modo release
 RUN cargo build --release
 
 FROM debian:bookworm-slim
