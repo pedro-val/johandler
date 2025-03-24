@@ -219,8 +219,18 @@ impl super::_entities::users::Model {
     /// # Errors
     ///
     /// when could not convert user claims to jwt token
-    pub fn generate_jwt(&self, secret: &str, expiration: &u64) -> ModelResult<String> {
-        Ok(jwt::JWT::new(secret).generate_token(expiration, self.pid.to_string(), None)?)
+    pub fn generate_jwt(
+        &self,
+        secret: &str,
+        expiration: &u64,
+        user_name: String,
+    ) -> ModelResult<String> {
+        Ok(jwt::JWT::new(secret).generate_token(
+            expiration,
+            self.pid.to_string(),
+            user_name,
+            None, // Claims adicionais (opcional)
+        )?)
     }
 }
 

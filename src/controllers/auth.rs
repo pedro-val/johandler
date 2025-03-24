@@ -44,7 +44,7 @@ async fn register(
         let jwt_secret = ctx.config.get_jwt_config()?;
 
         let token = existing_user
-            .generate_jwt(&jwt_secret.secret, &jwt_secret.expiration)
+            .generate_jwt(&jwt_secret.secret, &jwt_secret.expiration, existing_user.name.clone())
             .or_else(|_| unauthorized("unauthorized!"))?;
 
         return format::json(LoginResponse::new(&existing_user, &token));
@@ -66,7 +66,7 @@ async fn register(
     let jwt_secret = ctx.config.get_jwt_config()?;
 
     let token = user
-        .generate_jwt(&jwt_secret.secret, &jwt_secret.expiration)
+        .generate_jwt(&jwt_secret.secret, &jwt_secret.expiration, user.name.clone())
         .or_else(|_| unauthorized("unauthorized!"))?;
 
     // let user = user
@@ -155,7 +155,7 @@ async fn login(State(ctx): State<AppContext>, Json(params): Json<LoginParams>) -
     let jwt_secret = ctx.config.get_jwt_config()?;
 
     let token = user
-        .generate_jwt(&jwt_secret.secret, &jwt_secret.expiration)
+        .generate_jwt(&jwt_secret.secret, &jwt_secret.expiration, user.name.clone())
         .or_else(|_| unauthorized("unauthorized!"))?;
 
     format::json(LoginResponse::new(&user, &token))
