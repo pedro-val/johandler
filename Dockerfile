@@ -2,13 +2,15 @@ FROM rust:latest as builder
 
 WORKDIR /usr/src/
 
+COPY Cargo.toml Cargo.lock ./
+
 COPY . .
 
 # Limpar o cache de compilação do Cargo
 RUN cargo clean
 
 # Atualizar as dependências do Cargo
-RUN cargo update
+RUN cargo fetch
 
 # Compilar o projeto em modo release
 RUN cargo build --release
