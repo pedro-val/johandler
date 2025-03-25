@@ -2,8 +2,8 @@ FROM rust:latest as builder
 
 WORKDIR /usr/src/
 
-# Copie o Cargo.toml e Cargo.lock para fixar as dependências
-COPY Cargo.toml Cargo.lock ./
+# Copie o Cargo.toml, Cargo.lock e o diretório migration para fixar as dependências
+COPY Cargo.toml Cargo.lock migration/ ./
 
 # Baixe as dependências sem compilar o código
 RUN cargo fetch
